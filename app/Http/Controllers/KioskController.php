@@ -5,9 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\QueueTicket;
 use App\Events\TicketUpdated;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+use Mike42\Escpos\EscposImage;
 
 class KioskController extends Controller
 {
@@ -21,6 +22,7 @@ class KioskController extends Controller
         $validated = $request->validate([
             'service_type' => 'required|in:cashier,registrar',
         ]);
+
         return view('kiosk.priority', ['service' => $validated['service_type']]);
     }
 
@@ -30,6 +32,7 @@ class KioskController extends Controller
             'service' => 'required|in:cashier,registrar',
             'priority' => 'required|in:pwd_senior_pregnant,student,parent',
         ]);
+
         return view('kiosk.confirm', $validated);
     }
 
@@ -52,7 +55,6 @@ class KioskController extends Controller
 
         event(new TicketUpdated('created', $ticket));
 
-        // Print ticket if enabled
         if (config('app.printer_enabled', false)) {
             $this->printTicket($ticket);
         }
@@ -65,33 +67,80 @@ class KioskController extends Controller
         return view('kiosk.ticket', ['ticket' => $ticket]);
     }
 
+    // Print ticket using ESC/POS
     protected function printTicket(QueueTicket $ticket)
     {
         try {
-            $type = env('PRINTER_TYPE', 'windows');
-            $target = env('PRINTER_TARGET', 'EPSON TM-T82II');
+            Log::info('Starting print job for ticket: ' . $ticket->code);
 
-            if ($type === 'windows') {
-                $connector = new \Mike42\Escpos\PrintConnectors\WindowsPrintConnector($target);
-            } else {
-                $host = $target;
-                $port = (int)env('PRINTER_PORT', 9100);
-                $connector = new \Mike42\Escpos\PrintConnectors\NetworkPrintConnector($host, $port);
-            }
+            $printerPath = "smb://localhost/EPSONReceipt";
+            $connector = new \Mike42\Escpos\PrintConnectors\WindowsPrintConnector($printerPath);
 
             $printer = new \Mike42\Escpos\Printer($connector);
+
+            // Load and print logo image centered
+            $logoPath = public_path('images/Lourdes_final.png');
+
+            if (file_exists($logoPath)) {
+                try {
+                    $manager = new ImageManager(new Driver());
+                    $img = $manager->read($logoPath);
+
+                    $img->scale(width: 120);
+                    $img->greyscale();
+                    $img->contrast(20);
+
+                    $tempPath = sys_get_temp_dir() . '/receipt_logo_' . time() . '.png';
+                    $img->save($tempPath);
+
+                    $escposImg = EscposImage::load($tempPath, false);
+
+                    $printer->setJustification(\Mike42\Escpos\Printer::JUSTIFY_CENTER);
+                    $printer->graphics($escposImg);
+
+                    @unlink($tempPath);
+                } catch (\Exception $e) {
+                    Log::warning('Logo print failed: ' . $e->getMessage());
+                }
+            }
+
+            // CENTER ALL TEXT
             $printer->setJustification(\Mike42\Escpos\Printer::JUSTIFY_CENTER);
-            $printer->text("Queue Code\n");
-            $printer->selectPrintMode(\Mike42\Escpos\Printer::MODE_DOUBLE_WIDTH);
+
+            $printer->text("\n");
+            $printer->text("Your Queue Code\n");
+
+
+            // BIG + BOLD QUEUE CODE
+            // ULTRA BIG + ULTRA BOLD QUEUE CODE
+            $printer->setJustification(\Mike42\Escpos\Printer::JUSTIFY_CENTER);
+
+            // Increase font size (CHANGE 4,4 to 6,6 or 8,8 if you want even bigger)
+            $printer->setTextSize(4, 4);
+            $printer->setEmphasis(true); // bold ON
+
             $printer->text($ticket->code . "\n");
+
+            // Reset back to normal
+            $printer->setTextSize(1, 1);
+            $printer->setEmphasis(false);
+
+
+            $printer->text($ticket->created_at->format('M. j, Y h:i A') . "\n");
+
+
+            $printer->selectPrintMode(\Mike42\Escpos\Printer::MODE_EMPHASIZED);
+            $printer->text("Service: " . ucfirst($ticket->service_type) . "\n");
             $printer->selectPrintMode();
-            $printer->text($ticket->created_at->format('F j, Y g:i A') . "\n");
-            $printer->text(ucfirst($ticket->service_type) . " - " . str_replace('_', ' ', ucfirst($ticket->priority)) . "\n");
-            $printer->feed(2);
+
+            $printer->feed(1);
             $printer->cut();
             $printer->close();
+
+            Log::info('Print job completed successfully');
         } catch (\Throwable $e) {
             Log::error('Print failed: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
         }
     }
 }

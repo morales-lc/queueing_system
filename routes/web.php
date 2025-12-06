@@ -5,7 +5,7 @@ use App\Http\Controllers\KioskController;
 use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\CounterController;
 
-// Landing can redirect to kiosk
+// Landing redirect to kiosk
 Route::get('/', [KioskController::class, 'index'])->name('home');
 
 // Kiosk flow
