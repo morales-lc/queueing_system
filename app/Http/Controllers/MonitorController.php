@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Counter;
 use App\Models\QueueTicket;
+use App\Models\MonitorMedia;
 
 class MonitorController extends Controller
 {
@@ -30,6 +31,19 @@ class MonitorController extends Controller
                 ->first();
         }
 
-        return view('monitor.index', compact('cashierCounters', 'registrarCounters', 'nowServing'));
+        // Get active media ordered by order column
+        $mediaItems = MonitorMedia::where('is_active', true)
+            ->orderBy('order')
+            ->get();
+
+        return view('monitor.index', compact('cashierCounters', 'registrarCounters', 'nowServing', 'mediaItems'));
+    }
+
+    public function mediaFragment()
+    {
+        $mediaItems = MonitorMedia::where('is_active', true)
+            ->orderBy('order')
+            ->get();
+        return view('monitor._media', compact('mediaItems'));
     }
 }

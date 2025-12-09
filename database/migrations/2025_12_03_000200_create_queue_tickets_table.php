@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('queue_tickets', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->string('code');
             $table->enum('service_type', ['cashier', 'registrar']);
             $table->enum('priority', ['pwd_senior_pregnant', 'student', 'parent']);
             $table->enum('status', ['pending', 'serving', 'done', 'on_hold'])->default('pending');

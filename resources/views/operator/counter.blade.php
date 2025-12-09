@@ -7,17 +7,82 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <title>Counter</title>
+    <style>
+        body {
+            background-color: #ffedf5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header-bar {
+            background: linear-gradient(90deg, #ff4fa0, #ff82c4);
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
+        }
+
+        .header-bar .left-section {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-bar .circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #fff;
+            margin-right: 20px;
+            border: 3px solid #ffbad6;
+        }
+
+        .header-bar h5 {
+            color: #fff;
+            margin: 0;
+        }
+
+        .header-bar .logout-btn {
+            background: #fff;
+            color: #ff4fa0;
+            border: 2px solid #ffbad6;
+            padding: 8px 24px;
+            font-weight: bold;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .header-bar .logout-btn:hover {
+            background: #ffe6f3;
+            border-color: #ff78b6;
+            transform: translateY(-2px);
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+    </style>
 </head>
-<body class="p-4">
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center">
-        <h3>{{ ucfirst($counter->type) }} {{ $counter->name }}</h3>
-        <form method="post" action="{{ route('counter.release') }}">
+<body>
+
+<!-- TOP HEADER -->
+<div class="header-bar">
+    <div class="left-section">
+        <div class="circle"></div>
+        <h5 class="fw-bold">{{ ucfirst($counter->type) }} {{ $counter->name }}</h5>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ route('media.index') }}" class="btn logout-btn">
+            Manage Media
+        </a>
+        <form method="post" action="{{ route('logout') }}">
             @csrf
-            <input type="hidden" name="counter_id" value="{{ $counter->id }}">
-            <button class="btn btn-danger">Exit</button>
+            <button class="btn logout-btn">Logout</button>
         </form>
     </div>
+</div>
+
+<div class="container main-content">
 
     <div class="mt-4 p-4 bg-primary text-white rounded text-center">
         <h4 class="mb-2">Now Serving</h4>
@@ -59,7 +124,7 @@
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <span>{{ $t->code }} — holds: {{ $t->hold_count }}</span>
                     <div class="btn-group">
-                        <button type="button" class="btn btn-success btn-sm" onclick="callAgainWithTTS('{{ $t->code }}', '{{ route('counter.callAgain', [$counter->id, $t->id]) }}')">Call Again</button>
+                        <button type="button" class="btn btn-success btn-sm" data-code="{{ $t->code }}" data-url="{{ route('counter.callAgain', [$counter->id, $t->id]) }}" onclick="callAgainWithTTS(this.dataset.code, this.dataset.url)">Call Again</button>
                         <form method="post" action="{{ route('counter.removeHold', [$counter->id, $t->id]) }}" style="display:inline;">
                             @method('DELETE')
                             @csrf
@@ -101,26 +166,48 @@
             form.submit();
         }
 
-        // Auto-release counter when browser/tab closes
-        window.addEventListener('beforeunload', (e) => {
-            // Use sendBeacon for reliable async request during unload
-            const formData = new FormData();
-            formData.append('counter_id', '{{ $counter->id }}');
-            formData.append('_token', '{{ csrf_token() }}');
-            navigator.sendBeacon('{{ route("counter.release") }}', formData);
-        });
+        // Removed auto-release on tab close to avoid 419 issues
 
         // Echo is already initialized via resources/js/echo.js
         document.addEventListener('DOMContentLoaded', () => {
+            const counterId = {{ $counter->id }};
+            function addTicketToQueue(ticket) {
+                try {
+                    const list = document.querySelector('.list-group');
+                    if (!list || !ticket) return;
+                    const code = ticket.code;
+                    const priority = ticket.priority?.replace('_', ' ') ?? '';
+                    const exists = Array.from(list.querySelectorAll('li span'))
+                        .some(span => span.textContent.includes(code));
+                    if (exists) return;
+
+                    const items = list.querySelectorAll('li.list-group-item');
+                    const nonEmptyItems = Array.from(items).filter(li => !li.textContent.includes('No tickets'));
+                    if (nonEmptyItems.length >= 5) return; // keep next 5
+
+                    // Remove "No tickets." placeholder if present
+                    const emptyItem = Array.from(items).find(li => li.textContent.includes('No tickets.'));
+                    if (emptyItem) emptyItem.remove();
+
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    const span = document.createElement('span');
+                    span.textContent = `${code} — ${priority.charAt(0).toUpperCase() + priority.slice(1)}`;
+                    li.appendChild(span);
+                    list.appendChild(li);
+                } catch (err) {
+                    console.error(err);
+                }
+            }
             // Listen for new tickets created for this service type
             window.Echo.channel('queue.{{ $counter->type }}').listen('.ticket.created', (e) => {
-                // Reload to show new ticket in queue
-                location.reload();
+                // Add new ticket to queue list without full page reload
+                addTicketToQueue(e.ticket);
             });
 
             // Listen for tickets being served
             window.Echo.channel('queue.{{ $counter->type }}').listen('.ticket.serving', (e) => {
-                if (e.ticket.counter_id === {{ $counter->id }}) {
+                if (e.ticket.counter_id === counterId) {
                     const counterType = '{{ ucfirst($counter->type) }}';
                     const counterName = '{{ $counter->name }}';
                     speak('Now serving ' + e.ticket.code + '. Please proceed to ' + counterType + ' window ' + counterName);
@@ -141,5 +228,6 @@
         });
     </script>
 </div>
+
 </body>
 </html>

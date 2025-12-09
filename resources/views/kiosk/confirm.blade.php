@@ -10,6 +10,14 @@
 <body class="p-4">
 <div class="container">
     <h2>Confirm Selection</h2>
+    @if($errors->has('printer'))
+        <div class="alert alert-danger fw-bold" role="alert" style="border:2px solid #ffbad6; box-shadow:0 3px 6px rgba(255,60,140,0.25)">
+            <div class="d-flex align-items-center">
+                <span class="me-2">⚠️</span>
+                <span>{{ $errors->first('printer') }}</span>
+            </div>
+        </div>
+    @endif
     <p>Service: <strong>{{ ucfirst($service) }}</strong></p>
     <p>Priority: <strong>{{ str_replace('_',' ', ucfirst($priority)) }}</strong></p>
     <form method="post" action="{{ route('kiosk.issue') }}" class="mt-3">

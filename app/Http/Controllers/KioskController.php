@@ -43,10 +43,34 @@ class KioskController extends Controller
             'priority' => 'required|in:pwd_senior_pregnant,student,parent',
         ]);
 
-        $prefix = strtoupper(substr($validated['service'], 0, 1)) . strtoupper(substr($validated['priority'], 0, 1));
-        $sequence = str_pad((string)(QueueTicket::where('service_type', $validated['service'])->count() + 1), 3, '0', STR_PAD_LEFT);
+        // If printing is enabled, ensure printer is online before generating a code
+        if (config('app.printer_enabled', false)) {
+            // Use the actual Windows printer name as reported by Get-Printer
+            $printerShareName = 'EPSON TM-T82II Receipt';
+            // Use strict check to prevent ticket generation when printer is disconnected
+            if (!$this->isPrinterOnlineStrict($printerShareName)) {
+                // Redirect to index with error message
+                return redirect()->route('kiosk.index')
+                    ->withErrors(['printer' => 'Printer is not connected. Please ask staff for assistance and try again once connected.']);
+            }
+        }
+
+        // Generate prefix (e.g., C-S, R-P, etc.)
+        $prefix = strtoupper(substr($validated['service'], 0, 1))
+            . strtoupper(substr($validated['priority'], 0, 1));
+
+        // Reset daily: count only today's tickets for this service
+        $countToday = QueueTicket::where('service_type', $validated['service'])
+            ->whereDate('created_at', today())
+            ->count() + 1;
+
+        // Create the sequence number
+        $sequence = str_pad((string)$countToday, 3, '0', STR_PAD_LEFT);
+
+        // Final Code ( CS-001)
         $code = $prefix . '-' . $sequence;
 
+        // Save ticket
         $ticket = QueueTicket::create([
             'code' => $code,
             'service_type' => $validated['service'],
@@ -72,9 +96,23 @@ class KioskController extends Controller
     {
         try {
             Log::info('Starting print job for ticket: ' . $ticket->code);
+            // Guard: Skip printing if printer is offline to avoid OS spooling backlog
+            $printerShareName = 'EPSON TM-T82II Receipt'; // Windows printer name
+            $smbPath = "smb://localhost/EPSONReceipt"; // Original working path
 
-            $printerPath = "smb://localhost/EPSONReceipt";
-            $connector = new \Mike42\Escpos\PrintConnectors\WindowsPrintConnector($printerPath);
+            // Strict check before sending any job to Windows spooler; prevents queue buildup
+            if (!$this->isPrinterOnlineStrict($printerShareName)) {
+                Log::warning('Printer appears offline. Skipping print for ticket: ' . $ticket->code);
+                return; // Do not attempt to send job to spooler
+            }
+
+            // Try using original smb path first, then fall back to share name
+            try {
+                $connector = new \Mike42\Escpos\PrintConnectors\WindowsPrintConnector($smbPath);
+            } catch (\Throwable $e) {
+                Log::warning('SMB path connector failed, falling back to share name: ' . $e->getMessage());
+                $connector = new \Mike42\Escpos\PrintConnectors\WindowsPrintConnector($printerShareName);
+            }
 
             $printer = new \Mike42\Escpos\Printer($connector);
 
@@ -141,6 +179,113 @@ class KioskController extends Controller
         } catch (\Throwable $e) {
             Log::error('Print failed: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
+        }
+    }
+
+    // Check Windows printer status using PowerShell; returns true if not Offline
+    protected function isPrinterOnline(string $printerName): bool
+    {
+        try {
+            // Query printer status; be tolerant of environments where PowerShell or permissions block the call.
+            // We'll treat failures as "online" to avoid false negatives at the kiosk.
+            // Use single-quoted PHP string to avoid PHP interpolating PowerShell variables like $p
+            $psCommand = '($p = Get-Printer -Name \'" . addslashes($printerName) . "\' -ErrorAction SilentlyContinue); if ($p) { if ($p.WorkOffline) { \"Offline\" } else { $p.PrinterStatus } } else { \"Unknown\" }';
+            $cmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "' . $psCommand . '"';
+
+            $output = @shell_exec($cmd);
+            if ($output === null) {
+                // If we cannot query status, assume online to prevent blocking kiosk usage
+                Log::warning('Printer status query returned null. Assuming printer is online.');
+                return true;
+            }
+
+            $status = strtolower(trim($output));
+            // Consider only explicit "offline" as offline; everything else is treated as online
+            if ($status === 'offline') {
+                return false;
+            }
+
+            // Some environments report "unknown" or numeric codes; treat them as online to avoid false blocks
+            return true;
+        } catch (\Throwable $e) {
+            // On any exception, default to online to avoid blocking kiosk
+            Log::warning('Printer status check failed: ' . $e->getMessage() . ' — assuming printer is online.');
+            return true;
+        }
+    }
+
+    // Strict variant used right before spooling: only proceeds when clearly online/idle/printing
+    protected function isPrinterOnlineStrict(string $printerName): bool
+    {
+        try {
+            // Check if shell_exec is available
+            if (!function_exists('shell_exec')) {
+                Log::warning('shell_exec is disabled. Cannot check printer status. Treating as online to allow printing.');
+                return true; // Allow printing if we can't check status
+            }
+
+            $escapedName = addslashes($printerName);
+            
+            // Check 1: Get printer status
+            $psCommand = "(Get-Printer -Name '$escapedName' -ErrorAction SilentlyContinue).PrinterStatus";
+            $cmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "' . $psCommand . '"';
+            
+            Log::info('Executing PowerShell command for printer status');
+
+            $output = @shell_exec($cmd);
+            
+            Log::info('PowerShell printer status output: ' . var_export($output, true));
+            
+            if ($output === null || $output === false) {
+                Log::warning('Printer status query returned null/false. Treating as offline to prevent printing.');
+                return false; // Block printing if we can't check status
+            }
+            
+            $statusRaw = trim($output);
+            
+            if ($statusRaw === '') {
+                Log::warning('Printer status query returned empty. Treating as offline to prevent printing.');
+                return false; // Block if status unknown
+            }
+
+            Log::info('Printer status value: ' . $statusRaw);
+
+            // Check for problem statuses that should block printing
+            $statusLower = strtolower($statusRaw);
+            
+            // Block on: NotAvailable (disconnected/out of paper), Error, Offline, Paused
+            // Also check for compound statuses like "PaperOut, NotAvailable"
+            $blockedKeywords = ['notavailable', 'paperout', 'error', 'offline', 'paused'];
+            
+            foreach ($blockedKeywords as $keyword) {
+                if (strpos($statusLower, $keyword) !== false) {
+                    Log::info('Printer status indicates problem (contains "' . $keyword . '"): ' . $statusRaw . ' - blocking printing');
+                    return false;
+                }
+            }
+
+            // Check 2: Look for stuck/error jobs in the queue
+            $psJobCheck = "(Get-PrintJob -PrinterName '$escapedName' -ErrorAction SilentlyContinue | Where-Object { \$_.JobStatus -match 'Error|Paused|Blocked|Retained' }).Count";
+            $cmdJobCheck = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "' . $psJobCheck . '"';
+            
+            Log::info('Checking for error jobs in queue');
+            
+            $jobOutput = @shell_exec($cmdJobCheck);
+            $errorJobCount = intval(trim($jobOutput ?? '0'));
+            
+            Log::info('Error job count: ' . $errorJobCount);
+            
+            if ($errorJobCount > 0) {
+                Log::info('Found ' . $errorJobCount . ' stuck/error jobs in queue - blocking printing');
+                return false;
+            }
+
+            // Accept: Normal, Idle, Printing
+            Log::info('Printer status accepted as online: ' . $statusRaw);
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('Strict printer status check failed: ' . $e->getMessage() . ' — treating as offline.');
+            return false;
         }
     }
 }

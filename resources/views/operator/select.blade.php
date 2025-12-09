@@ -1,34 +1,53 @@
 <!doctype html>
 <html>
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@2.2.6/dist/echo.iife.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <title>Select Counter</title>
 </head>
 <body class="p-4">
 <div class="container">
-    <h2>Choose Your Window</h2>
-    <div class="row">
-        <div class="col-md-6">
-            <h4>Cashier</h4>
-            <form method="post" action="{{ route('counter.claim') }}" class="d-grid gap-2">
-                @csrf
-                @foreach($cashier as $c)
-                    <button class="btn {{ $c->claimed ? 'btn-secondary' : 'btn-primary' }}" {{ $c->claimed ? 'disabled' : '' }} name="counter_id" value="{{ $c->id }}">Cashier {{ $c->name }}</button>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Choose Your {{ ucfirst($userRole) }} Window</h2>
+        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+            @csrf
+            <button class="btn btn-outline-danger">Logout</button>
+        </form>
+    </div>
+
+    @if($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
                 @endforeach
-            </form>
+            </ul>
         </div>
-        <div class="col-md-6">
-            <h4>Registrar</h4>
-            <form method="post" action="{{ route('counter.claim') }}" class="d-grid gap-2">
-                @csrf
-                @foreach($registrar as $c)
-                    <button class="btn {{ $c->claimed ? 'btn-secondary' : 'btn-success' }}" {{ $c->claimed ? 'disabled' : '' }} name="counter_id" value="{{ $c->id }}">Registrar {{ $c->name }}</button>
-                @endforeach
-            </form>
+    @endif
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Available {{ ucfirst($userRole) }} Counters</h4>
+                    <form method="post" action="{{ route('counter.claim') }}" class="d-grid gap-3">
+                        @csrf
+                        @foreach($counters as $c)
+                            <button class="btn btn-lg {{ $c->claimed ? 'btn-secondary' : 'btn-primary' }}" 
+                                    {{ $c->claimed ? 'disabled' : '' }} 
+                                    name="counter_id" 
+                                    value="{{ $c->id }}">
+                                {{ ucfirst($userRole) }} {{ $c->name }}
+                                @if($c->claimed)
+                                    <span class="badge bg-danger ms-2">In Use</span>
+                                @else
+                                    <span class="badge bg-success ms-2">Available</span>
+                                @endif
+                            </button>
+                        @endforeach
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>

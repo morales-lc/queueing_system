@@ -10,7 +10,32 @@
     <title>Your Ticket</title>
 
     <style>
-        html, body {
+        /* Loading Animation */
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 6px solid #dcdcdc;
+            border-top: 6px solid #1d3c6e;
+            /* Lourdes blue */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+
+
+        html,
+        body {
             height: 100%;
             overflow: hidden;
             margin: 0;
@@ -157,6 +182,8 @@
         <h5 class="m-0 fw-bold">LOURDES COLLEGE, INC.</h5>
     </div>
 
+
+
     <div class="main-wrapper">
 
         <!-- LEFT COLUMN: STAFF IMAGE -->
@@ -188,7 +215,7 @@
                 PLEASE PROCEED TO YOUR RESPECTIVE<br>
                 WINDOW AS DISPLAYED. THANK YOU!
             </div>
-
+            <div class="loading-spinner" id="loader"></div>
         </div>
 
     </div>
@@ -196,7 +223,23 @@
     <script>
         setTimeout(function() {
             window.location.href = "{{ route('kiosk.index') }}";
-        }, 10000); // Redirect after 10 seconds
+        }, 5000); // Redirect after 10 seconds
+    </script>
+
+    <script>
+        // not used for now
+        // let timeLeft = 5; // seconds
+        // const element = document.getElementById("countdown");
+
+        // const timer = setInterval(() => {
+        //     element.textContent = timeLeft;
+        //     timeLeft--;
+
+        //     if (timeLeft < 0) {
+        //         clearInterval(timer);
+        //         element.textContent = "";
+        //     }
+        // }, 1000);
     </script>
 
 </body>

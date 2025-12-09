@@ -192,9 +192,23 @@
     <div class="header-bar">
         <div class="circle"></div>
         <h5 class="m-0 fw-bold">LOURDES COLLEGE, INC.</h5>
+        <div class="ms-auto">
+            <a href="{{ route('kiosk.index') }}" class="btn btn-light fw-bold" style="border:2px solid #ffbad6;">
+                ← Back
+            </a>
+        </div>
     </div>
 
     <div class="main-wrapper">
+
+        @error('printer')
+        <div class="alert alert-danger fw-bold" role="alert" style="border:2px solid #ffbad6; box-shadow:0 3px 6px rgba(255,60,140,0.25)">
+            <div class="d-flex align-items-center">
+                <span class="me-2">⚠️</span>
+                <span>{{ $message }}</span>
+            </div>
+        </div>
+        @enderror
 
         <!-- LOGO -->
         <div class="logo-section">

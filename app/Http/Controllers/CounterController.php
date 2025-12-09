@@ -7,14 +7,20 @@ use App\Models\QueueTicket;
 use Illuminate\Http\Request;
 use Illuminate\Support\DB;
 use App\Events\TicketUpdated;
+use Illuminate\Support\Facades\Auth;
 
 class CounterController extends Controller
 {
     public function select()
     {
-        $cashier = Counter::where('type', 'cashier')->get();
-        $registrar = Counter::where('type', 'registrar')->get();
-        return view('operator.select', compact('cashier', 'registrar'));
+        $userRole = Auth::user()->role;
+        
+        // Only show counters matching user's role
+        $counters = Counter::where('type', $userRole)
+            ->orderBy('name')
+            ->get();
+        
+        return view('operator.select', compact('counters', 'userRole'));
     }
 
     public function claim(Request $request)
@@ -24,9 +30,16 @@ class CounterController extends Controller
         ]);
 
         $counter = Counter::findOrFail($validated['counter_id']);
+        
+        // Check if counter type matches user's role
+        if ($counter->type !== Auth::user()->role) {
+            return back()->withErrors(['counter' => 'You cannot claim this counter type.']);
+        }
+        
         if ($counter->claimed) {
             return back()->withErrors(['counter' => 'Counter already in use.']);
         }
+        
         $counter->claimed = true;
         $counter->save();
         return redirect()->route('counter.show', $counter);
@@ -34,17 +47,27 @@ class CounterController extends Controller
 
     public function release(Request $request)
     {
-        $validated = $request->validate([
-            'counter_id' => 'required|exists:counters,id',
-        ]);
-        $counter = Counter::findOrFail($validated['counter_id']);
-        $counter->claimed = false;
-        $counter->save();
-        return redirect()->route('counter.select');
+        $user = Auth::user();
+        
+        if ($user && $user->counter_id) {
+            $counter = $user->counter;
+            if ($counter) {
+                $counter->claimed = false;
+                $counter->save();
+            }
+        }
+        
+        return redirect()->route('login');
     }
 
     public function show(Counter $counter)
     {
+        // Verify user has access to this counter
+        $user = Auth::user();
+        if (!$user || $user->counter_id !== $counter->id) {
+            abort(403, 'Unauthorized access to this counter.');
+        }
+        
         $queue = QueueTicket::where('service_type', $counter->type)
             ->where('status', 'pending')
             ->orderByRaw("FIELD(priority, 'pwd_senior_pregnant','student','parent')")

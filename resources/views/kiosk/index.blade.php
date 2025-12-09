@@ -39,6 +39,8 @@
             border-radius: 20px;
             border: 3px solid #ffbad6;
             box-shadow: 0 4px 12px rgba(255, 120, 170, 0.3);
+            /* Help left avatar match right content height */
+            display: block;
         }
 
         .left-image-box {
@@ -58,6 +60,21 @@
             width: auto;
             height: 100%;
             object-fit: contain;
+        }
+
+        /* Make columns equal height so avatar aligns with registrar button area */
+        .main-wrapper .row {
+            display: flex;
+            align-items: stretch;
+        }
+        .main-wrapper .col-md-5,
+        .main-wrapper .col-md-7 {
+            display: flex;
+            flex-direction: column;
+        }
+        .main-wrapper .col-md-5 > .left-image-box,
+        .main-wrapper .col-md-7 > .content-column {
+            flex: 1 1 auto;
         }
 
         .service-btn {
@@ -124,7 +141,16 @@
             </div>
 
             <!-- RIGHT CONTENT -->
-            <div class="col-md-7 ps-4">
+            <div class="col-md-7 ps-4 content-column">
+
+                @error('printer')
+                <div class="alert alert-danger fw-bold" role="alert" style="border:2px solid #ffbad6; box-shadow:0 3px 6px rgba(255,60,140,0.25)">
+                    <div class="d-flex align-items-center">
+                        <span class="me-2">⚠️</span>
+                        <span>{{ $message }}</span>
+                    </div>
+                </div>
+                @enderror
 
                 <!-- LOGO -->
                 <div class="text-center mb-1">
@@ -173,6 +199,32 @@
         </div>
 
     </div>
+
+    <script>
+        // Sync left avatar box height to right content (up to registrar button)
+        function syncAvatarHeight() {
+            try {
+                const content = document.querySelector('.content-column');
+                const leftBox = document.querySelector('.left-image-box');
+                if (!content || !leftBox) return;
+                const h = content.offsetHeight;
+                leftBox.style.height = h + 'px';
+                const img = leftBox.querySelector('img');
+                if (img) {
+                    img.style.height = '100%';
+                    img.style.width = 'auto';
+                    img.style.objectFit = 'contain';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            syncAvatarHeight();
+            window.addEventListener('resize', syncAvatarHeight);
+        });
+    </script>
 
 </body>
 </html>

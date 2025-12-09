@@ -14,25 +14,41 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-
-
         /**
          * Seed the application's database. */
-        // Seed counters Cashier 1-4 and Registrar 1-4
+        // Seed counters first
         foreach (range(1, 4) as $i) {
             Counter::firstOrCreate(['name' => (string)$i, 'type' => 'cashier'], ['claimed' => false]);
         }
         foreach (range(1, 4) as $i) {
             Counter::firstOrCreate(['name' => (string)$i, 'type' => 'registrar'], ['claimed' => false]);
         }
+
+        // Create users linked to specific counters
         foreach (range(1, 4) as $i) {
-            Counter::firstOrCreate(['name' => (string)$i, 'type' => 'registrar'], ['claimed' => false]);
+            $counter = Counter::where('type', 'cashier')->where('name', (string)$i)->first();
+            User::firstOrCreate(
+                ['email' => "cashier{$i}@queue.local"],
+                [
+                    'name' => "Cashier Window {$i}",
+                    'password' => bcrypt('password'),
+                    'role' => 'cashier',
+                    'counter_id' => $counter->id
+                ]
+            );
+        }
+
+        foreach (range(1, 4) as $i) {
+            $counter = Counter::where('type', 'registrar')->where('name', (string)$i)->first();
+            User::firstOrCreate(
+                ['email' => "registrar{$i}@queue.local"],
+                [
+                    'name' => "Registrar Window {$i}",
+                    'password' => bcrypt('password'),
+                    'role' => 'registrar',
+                    'counter_id' => $counter->id
+                ]
+            );
         }
     }
 }
