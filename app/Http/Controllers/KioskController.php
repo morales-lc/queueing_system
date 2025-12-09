@@ -44,7 +44,8 @@ class KioskController extends Controller
         ]);
 
         // If printing is enabled, ensure printer is online before generating a code
-        if (config('app.printer_enabled', false)) {
+        // Skip printer check for HTTP printing (handled by remote print server)
+        if (config('app.printer_enabled', false) && config('app.printer_type') !== 'http') {
             // Use the actual Windows printer name as reported by Get-Printer
             $printerShareName = 'EPSON TM-T82II Receipt';
             // Use strict check to prevent ticket generation when printer is disconnected
@@ -91,11 +92,20 @@ class KioskController extends Controller
         return view('kiosk.ticket', ['ticket' => $ticket]);
     }
 
-    // Print ticket using ESC/POS
+    // Print ticket using ESC/POS or HTTP
     protected function printTicket(QueueTicket $ticket)
     {
         try {
             Log::info('Starting print job for ticket: ' . $ticket->code);
+            
+            $printerType = config('app.printer_type', 'windows');
+            
+            // Use HTTP printing if configured
+            if ($printerType === 'http') {
+                return $this->printViaHttp($ticket);
+            }
+            
+            // Original ESC/POS printing for Windows
             // Guard: Skip printing if printer is offline to avoid OS spooling backlog
             $printerShareName = 'EPSON TM-T82II Receipt'; // Windows printer name
             $smbPath = "smb://localhost/EPSONReceipt"; // Original working path
@@ -179,6 +189,48 @@ class KioskController extends Controller
         } catch (\Throwable $e) {
             Log::error('Print failed: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
+        }
+    }
+
+    // Print ticket via HTTP to remote print server (Windows 11 computer)
+    protected function printViaHttp(QueueTicket $ticket)
+    {
+        try {
+            $printerUrl = config('app.printer_target');
+            
+            if (!$printerUrl) {
+                Log::error('PRINTER_TARGET not configured in .env');
+                return;
+            }
+            
+            Log::info('Sending print job via HTTP to: ' . $printerUrl);
+            
+            // Prepare print data
+            $printData = [
+                'code' => $ticket->code,
+                'service' => ucfirst($ticket->service_type),
+                'priority' => ucfirst(str_replace('_', ' ', $ticket->priority)),
+                'time' => $ticket->created_at->format('M. j, Y h:i A'),
+                'logo' => true,
+            ];
+            
+            // Send HTTP request to Windows print server
+            $response = \Illuminate\Support\Facades\Http::timeout(5)
+                ->post($printerUrl, $printData);
+            
+            if ($response->successful()) {
+                Log::info('Print job sent successfully via HTTP');
+                $responseData = $response->json();
+                Log::info('Print server response: ' . json_encode($responseData));
+            } else {
+                Log::error('Print server returned error: ' . $response->status() . ' - ' . $response->body());
+            }
+            
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Cannot connect to print server: ' . $e->getMessage());
+            Log::error('Make sure the print server is running on the Windows 11 computer');
+        } catch (\Throwable $e) {
+            Log::error('HTTP print failed: ' . $e->getMessage());
         }
     }
 
