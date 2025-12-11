@@ -98,12 +98,7 @@ VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 
 # Printer settings (set to false for production unless you have receipt printer)
 PRINTER_ENABLED=false
-
-# If printer enabled, set print server URL (Windows PC with printer)
-# PRINT_SERVER_URL=http://192.168.0.95:3000
 ```
-
-**Important**: For receipt printing setup, see [PRINTING_SETUP.md](PRINTING_SETUP.md) for complete instructions on configuring the Windows print server.
 
 ## Step 6: Generate Application Key
 
