@@ -73,7 +73,7 @@ Update the following settings in `.env`:
 APP_NAME="Lourdes College Queueing System"
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=http://your-server-ip-or-domain
+APP_URL=http://louna.lccdo.edu.ph
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -87,17 +87,20 @@ BROADCAST_CONNECTION=reverb
 REVERB_APP_ID=524686
 REVERB_APP_KEY=gvsglhliylmqajmutw3z
 REVERB_APP_SECRET=fnntu0hx7ndqkexpybfd
-REVERB_HOST="0.0.0.0"
+REVERB_HOST=louna.lccdo.edu.ph
 REVERB_PORT=8080
 REVERB_SCHEME=http
 
 VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
-VITE_REVERB_HOST="your-server-ip-or-domain"
+VITE_REVERB_HOST="louna.lccdo.edu.ph"
 VITE_REVERB_PORT="${REVERB_PORT}"
 VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 
-# Printer settings (set to false for production unless you have receipt printer)
-PRINTER_ENABLED=false
+# Printer settings - HTTP printing to Windows PC
+PRINTER_ENABLED=true
+PRINTER_TYPE=http
+PRINTER_TARGET=http://192.168.138.20:3000/print
+PRINTER_PORT=9100
 ```
 
 ## Step 6: Generate Application Key
@@ -147,9 +150,8 @@ Add the following configuration:
 
 ```apache
 <VirtualHost *:80>
-    ServerName your-domain.com
-    ServerAlias www.your-domain.com
-    ServerAdmin admin@your-domain.com
+    ServerName louna.lccdo.edu.ph
+    ServerAdmin admin@lccdo.edu.ph
     
     DocumentRoot /var/www/html/queueing_system/public
     
@@ -164,6 +166,20 @@ Add the following configuration:
         Require all denied
     </Directory>
     
+    # Proxy WebSocket connections for Laravel Reverb
+    ProxyRequests Off
+    ProxyPreserveHost On
+    
+    # WebSocket proxy for Reverb
+    <Location /app>
+        ProxyPass ws://127.0.0.1:8080/app
+        ProxyPassReverse ws://127.0.0.1:8080/app
+    </Location>
+    
+    # HTTP fallback for Reverb
+    ProxyPass /apps/ http://127.0.0.1:8080/apps/
+    ProxyPassReverse /apps/ http://127.0.0.1:8080/apps/
+    
     ErrorLog ${APACHE_LOG_DIR}/queueing_system-error.log
     CustomLog ${APACHE_LOG_DIR}/queueing_system-access.log combined
 </VirtualHost>
@@ -176,6 +192,9 @@ Add the following configuration:
 sudo a2enmod rewrite
 sudo a2enmod headers
 sudo a2enmod ssl
+sudo a2enmod proxy
+sudo a2enmod proxy_http
+sudo a2enmod proxy_wstunnel
 
 # Disable default site (optional)
 sudo a2dissite 000-default.conf
@@ -263,11 +282,14 @@ sudo systemctl enable laravel-worker
 sudo systemctl start laravel-worker
 ```
 
-## Step 14: Configure Firewall
-
-```bash
-# Allow Apache
+## Step 14: Co (HTTP and HTTPS)
 sudo ufw allow 'Apache Full'
+
+# Allow Reverb WebSocket port
+sudo ufw allow 8080/tcp
+
+# Allow MySQL (if accessing remotely - optional)
+# sudo ufw allow 3306che Full'
 
 # Allow Reverb WebSocket port
 sudo ufw allow 8080/tcp
@@ -328,12 +350,35 @@ User::create([
     'counter_id' => $counter->id
 ]);
 
-exit
+exitSet Up Windows Print Server
+
+The receipt printer is connected to a Windows 10/11 computer (IP: 192.168.138.20). You need to set up a print server on that Windows machine.
+
+**Follow the detailed guide in `WINDOWS_PRINT_SERVER.md`**
+
+Quick setup:
+1. On Windows PC (192.168.138.20), install Node.js
+2. Copy `print-server.js` to `C:\PrintServer\`
+3. Install dependencies: `npm install express escpos escpos-windows body-parser`
+4. Run: `node print-server.js`
+5. Set up as Windows Service using NSSM or PM2 (see guide)
+
+Test the connection from Linux server:
+```bash
+curl http://192.168.138.20:3000/health
 ```
 
-## Step 17: Access Your Application
+## Step 18: Access Your Application
 
 Open your web browser and navigate to:
+- **Kiosk**: `http://louna.lccdo.edu.ph/`
+- **Monitor**: `http://louna.lccdo.edu.ph/monitor`
+- **Operator Login**: `http://louna.lccdo.edu.ph/login`
+
+Or using IP:
+- **Kiosk**: `http://192.168.138.30/`
+- **Monitor**: `http://192.168.138.30/monitor`
+- **Operator Login**: `http://192.168.138.30
 - **Kiosk**: `http://your-server-ip/`
 - **Monitor**: `http://your-server-ip/monitor`
 - **Operator Login**: `http://your-server-ip/login`
@@ -348,10 +393,20 @@ sudo tail -f /var/log/apache2/queueing_system-error.log
 ### Check Laravel Logs
 ```bash
 sudo tail -f /var/www/html/queueing_system/storage/logs/laravel.log
-```
+```: `sudo ufw status`
+2. Check if Reverb service is running: `sudo systemctl status reverb`
+3. Verify VITE_REVERB_HOST in `.env` is set to `louna.lccdo.edu.ph`
+4. Check browser console for WebSocket connection errors
+5. Verify Apache proxy modules are enabled: `sudo a2enmod proxy proxy_http proxy_wstunnel`
+6. Test WebSocket connection: `curl http://127.0.0.1:8080/apps/524686/health`
 
-### Check Reverb Service Status
-```bash
+### Printer Not Working
+1. Ensure Windows print server is running on 192.168.138.20
+2. Test connection: `curl http://192.168.138.20:3000/health`
+3. Verify PRINTER_TARGET in `.env` is correct
+4. Check Windows firewall allows port 3000
+5. Ensure printer is powered on and connected to Windows PC
+6. Check Laravel logs: `sudo tail -f storage/logs/laravel.log`
 sudo systemctl status reverb
 sudo journalctl -u reverb -f
 ```

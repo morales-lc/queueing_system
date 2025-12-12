@@ -205,13 +205,15 @@ class KioskController extends Controller
             
             Log::info('Sending print job via HTTP to: ' . $printerUrl);
             
-            // Prepare print data
+            // Prepare print data in the format expected by the print server
             $printData = [
-                'code' => $ticket->code,
-                'service' => ucfirst($ticket->service_type),
-                'priority' => ucfirst(str_replace('_', ' ', $ticket->priority)),
-                'time' => $ticket->created_at->format('M. j, Y h:i A'),
-                'logo' => true,
+                'ticket' => [
+                    'code' => $ticket->code,
+                    'service_type' => $ticket->service_type,
+                    'priority' => $ticket->priority,
+                    // Use ISO string so Python can print it directly
+                    'created_at' => $ticket->created_at->toIso8601String(),
+                ],
             ];
             
             // Send HTTP request to Windows print server
