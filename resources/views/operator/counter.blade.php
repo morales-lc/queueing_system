@@ -1,19 +1,25 @@
 <!doctype html>
 <html>
+
 <head>
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/laravel-echo@2.2.6/dist/echo.iife.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <title>Counter</title>
+
     <style>
         body {
-            background-color: #ffedf5;
+            background: #ffedf5;
             margin: 0;
-            padding: 0;
+            height: 100vh;
         }
 
+        /* HEADER */
         .header-bar {
             background: linear-gradient(90deg, #ff4fa0, #ff82c4);
             padding: 15px 30px;
@@ -23,12 +29,7 @@
             box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
         }
 
-        .header-bar .left-section {
-            display: flex;
-            align-items: center;
-        }
-
-        .header-bar .circle {
+        .circle {
             width: 50px;
             height: 50px;
             border-radius: 50%;
@@ -37,197 +38,218 @@
             border: 3px solid #ffbad6;
         }
 
-        .header-bar h5 {
-            color: #fff;
-            margin: 0;
+        /* MAIN GRID */
+        .main-wrapper {
+            display: grid;
+            grid-template-columns: 70% 30%;
+            height: calc(100vh - 80px);
         }
 
-        .header-bar .logout-btn {
-            background: #fff;
-            color: #ff4fa0;
-            border: 2px solid #ffbad6;
-            padding: 8px 24px;
+        /* LEFT PANEL */
+        .left-panel {
+            padding: 40px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cashier-title {
+            font-size: 36px;
             font-weight: bold;
-            border-radius: 8px;
-            transition: all 0.3s ease;
         }
 
-        .header-bar .logout-btn:hover {
-            background: #ffe6f3;
-            border-color: #ff78b6;
-            transform: translateY(-2px);
+        .call-again-btn {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            left: auto;
+            transform: none;
+            background: #2d2d2d;
+            color: #fff;
+            border: none;
+            padding: 10px 28px;
+            border-radius: 6px;
+            font-weight: bold;
         }
 
-        .main-content {
+        /* CENTER SERVING AREA */
+        .serving-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .serving-label {
+            letter-spacing: 2px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .serving-code {
+            font-size: 96px;
+            font-weight: 900;
+        }
+
+        .bottom-actions {
+            position: absolute;
+            bottom: 60px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 80px;
+        }
+
+        .bottom-actions button {
+            padding: 14px 40px;
+            font-weight: bold;
+        }
+
+        /* RIGHT PANEL */
+        .right-panel {
+            background: #f1f1f1;
+            border-left: 2px solid #ccc;
             padding: 20px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            background: #d0d0d0;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
         }
     </style>
 </head>
+
 <body>
 
-<!-- TOP HEADER -->
-<div class="header-bar">
-    <div class="left-section">
-        <div class="circle"></div>
-        <h5 class="fw-bold">{{ ucfirst($counter->type) }} {{ $counter->name }}</h5>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('media.index') }}" class="btn logout-btn">
-            Manage Media
-        </a>
-        <form method="post" action="{{ route('logout') }}">
-            @csrf
-            <button class="btn logout-btn">Logout</button>
-        </form>
-    </div>
-</div>
+    <!-- HEADER -->
+    <div class="header-bar">
+        <div class="d-flex align-items-center">
+            <div class="circle"></div>
+            <h5 class="fw-bold text-white mb-0">
+                {{ ucfirst($counter->type) }} {{ $counter->name }}
+            </h5>
+        </div>
 
-<div class="container main-content">
-
-    <div class="mt-4 p-4 bg-primary text-white rounded text-center">
-        <h4 class="mb-2">Now Serving</h4>
-        @if($nowServing)
-            <div class="display-3 fw-bold">{{ $nowServing->code }}</div>
-            <p class="mb-0">{{ ucfirst(str_replace('_', ' ', $nowServing->priority)) }}</p>
-            <form method="post" action="{{ route('counter.hold', [$counter->id, $nowServing->id]) }}" class="mt-3">
+        <div class="d-flex gap-2">
+            <a href="{{ route('media.index') }}" class="btn btn-light fw-bold">Manage Media</a>
+            <form method="post" action="{{ route('logout') }}">
                 @csrf
-                <button class="btn btn-warning">Put On Hold</button>
+                <button class="btn btn-light fw-bold">Logout</button>
             </form>
-        @else
-            <div class="display-6">—</div>
-            <p class="mb-0">No ticket being served</p>
-        @endif
+        </div>
     </div>
 
-    <div class="mt-4">
-        <h5>Queue (next 5)</h5>
-        <ul class="list-group">
-            @forelse($queue as $t)
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>{{ $t->code }} — {{ ucfirst($t->priority) }}</span>
+    <!-- MAIN -->
+    <div class="main-wrapper">
+
+        <!-- LEFT -->
+        <div class="left-panel">
+
+            <div class="cashier-title">CASHIER #{{ $counter->name }}</div>
+
+            <!-- UI ONLY -->
+            <button class="call-again-btn">CALL AGAIN</button>
+
+            <!-- CENTERED SERVING -->
+            <div class="serving-center">
+                <div class="serving-label">CURRENTLY SERVING:</div>
+
+                @if($nowServing)
+                <div class="serving-code">{{ $nowServing->code }}</div>
+                @else
+                <div class="serving-code">—</div>
+                @endif
+            </div>
+
+            <div class="bottom-actions">
+                @if($nowServing)
+                <form method="post" action="{{ route('counter.hold', [$counter->id, $nowServing->id]) }}">
+                    @csrf
+                    <button class="btn btn-dark">ON-HOLD</button>
+                </form>
+                @endif
+
+                <form method="post" action="{{ route('counter.next', $counter->id) }}">
+                    @csrf
+                    <button class="btn btn-dark">NEXT</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right-panel">
+
+            <div class="panel-title">QUEUE</div>
+            <ul class="list-group mb-4">
+                @forelse($queue as $t)
+                <li class="list-group-item text-center fw-bold">
+                    {{ $t->code }}
                 </li>
-            @empty
-                <li class="list-group-item">No tickets.</li>
-            @endforelse
-        </ul>
+                @empty
+                <li class="list-group-item text-center">No tickets.</li>
+                @endforelse
+            </ul>
 
-        <form method="post" action="{{ route('counter.next', $counter->id) }}" class="mt-3">
-            @csrf
-            <button class="btn btn-primary btn-lg">Next</button>
-        </form>
-    </div>
-
-    <div class="mt-4">
-        <h5>On Hold</h5>
-        <ul class="list-group">
-            @forelse($onHold as $t)
+            <div class="panel-title">ON-HOLD</div>
+            <ul class="list-group">
+                @forelse($onHold as $t)
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>{{ $t->code }} — holds: {{ $t->hold_count }}</span>
+                    <span class="fw-bold">{{ $t->code }}</span>
+
                     <div class="btn-group">
-                        <button type="button" class="btn btn-success btn-sm" data-code="{{ $t->code }}" data-url="{{ route('counter.callAgain', [$counter->id, $t->id]) }}" onclick="callAgainWithTTS(this.dataset.code, this.dataset.url)">Call Again</button>
-                        <form method="post" action="{{ route('counter.removeHold', [$counter->id, $t->id]) }}" style="display:inline;">
+                        <button class="btn btn-success btn-sm">Call Again</button>
+
+                        <form method="post" action="{{ route('counter.removeHold', [$counter->id, $t->id]) }}">
                             @method('DELETE')
                             @csrf
-                            <button class="btn btn-outline-danger btn-sm">Remove</button>
+                            <button class="btn btn-outline-danger btn-sm">✕</button>
                         </form>
                     </div>
                 </li>
-            @empty
-                <li class="list-group-item">No on-hold tickets.</li>
-            @endforelse
-        </ul>
+                @empty
+                <li class="list-group-item text-center">No on-hold tickets.</li>
+                @endforelse
+            </ul>
+
+        </div>
     </div>
 
+    <!-- JS / ECHO  -->
     <script>
-        function speak(text){
+        function speak(text) {
             const u = new SpeechSynthesisUtterance(text);
             window.speechSynthesis.speak(u);
         }
 
-        // Call Again with immediate TTS announcement
-        function callAgainWithTTS(code, url) {
-            // Announce immediately with counter info
-            const counterType = '{{ ucfirst($counter->type) }}';
-            const counterName = '{{ $counter->name }}';
-            speak('Now serving ' + code + '. Please proceed to ' + counterType + ' window ' + counterName);
-            
-            // Submit the form via POST
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-            
-            const csrfToken = document.createElement('input');
-            csrfToken.type = 'hidden';
-            csrfToken.name = '_token';
-            csrfToken.value = '{{ csrf_token() }}';
-            form.appendChild(csrfToken);
-            
-            document.body.appendChild(form);
-            form.submit();
-        }
-
-        // Removed auto-release on tab close to avoid 419 issues
-
-        // Echo is already initialized via resources/js/echo.js
         document.addEventListener('DOMContentLoaded', () => {
-            const counterId = {{ $counter->id }};
-            function addTicketToQueue(ticket) {
-                try {
-                    const list = document.querySelector('.list-group');
-                    if (!list || !ticket) return;
-                    const code = ticket.code;
-                    const priority = ticket.priority?.replace('_', ' ') ?? '';
-                    const exists = Array.from(list.querySelectorAll('li span'))
-                        .some(span => span.textContent.includes(code));
-                    if (exists) return;
-
-                    const items = list.querySelectorAll('li.list-group-item');
-                    const nonEmptyItems = Array.from(items).filter(li => !li.textContent.includes('No tickets'));
-                    if (nonEmptyItems.length >= 5) return; // keep next 5
-
-                    // Remove "No tickets." placeholder if present
-                    const emptyItem = Array.from(items).find(li => li.textContent.includes('No tickets.'));
-                    if (emptyItem) emptyItem.remove();
-
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                    const span = document.createElement('span');
-                    span.textContent = `${code} — ${priority.charAt(0).toUpperCase() + priority.slice(1)}`;
-                    li.appendChild(span);
-                    list.appendChild(li);
-                } catch (err) {
-                    console.error(err);
+            const counterId = {
+                {
+                    $counter - > id
                 }
-            }
-            // Listen for new tickets created for this service type
-            window.Echo.channel('queue.{{ $counter->type }}').listen('.ticket.created', (e) => {
-                // Add new ticket to queue list without full page reload
-                addTicketToQueue(e.ticket);
-            });
+            };
 
-            // Listen for tickets being served
-            window.Echo.channel('queue.{{ $counter->type }}').listen('.ticket.serving', (e) => {
-                if (e.ticket.counter_id === counterId) {
-                    const counterType = '{{ ucfirst($counter->type) }}';
-                    const counterName = '{{ $counter->name }}';
-                    speak('Now serving ' + e.ticket.code + '. Please proceed to ' + counterType + ' window ' + counterName);
-                }
-                // Reload to update queue list
-                location.reload();
-            });
-
-            // Listen for tickets being put on hold
-            window.Echo.channel('queue.{{ $counter->type }}').listen('.ticket.on_hold', (e) => {
-                location.reload();
-            });
-
-            // Listen for tickets being marked done
-            window.Echo.channel('queue.{{ $counter->type }}').listen('.ticket.done', (e) => {
-                location.reload();
-            });
+            window.Echo.channel('queue.{{ $counter->type }}')
+                .listen('.ticket.created', () => location.reload())
+                .listen('.ticket.serving', (e) => {
+                    if (e.ticket.counter_id === counterId) {
+                        speak(
+                            'Now serving ' + e.ticket.code +
+                            '. Please proceed to {{ ucfirst($counter->type) }} window {{ $counter->name }}'
+                        );
+                    }
+                    location.reload();
+                })
+                .listen('.ticket.on_hold', () => location.reload())
+                .listen('.ticket.done', () => location.reload());
         });
     </script>
-</div>
 
 </body>
+
 </html>

@@ -188,7 +188,7 @@
 
         <!-- LEFT COLUMN: STAFF IMAGE -->
         <div class="left-column">
-            <img src="/images/lira.png" alt="Staff">
+            <img src="/images/louna.gif" alt="Staff">
         </div>
 
         <!-- RIGHT COLUMN: TICKET CONTENT -->

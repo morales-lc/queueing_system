@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Kiosk</title>
@@ -57,8 +58,10 @@
         }
 
         .left-image-box img {
+            max-height: 100%;
+            max-width: 100%;
+            height: auto;
             width: auto;
-            height: 100%;
             object-fit: contain;
         }
 
@@ -67,13 +70,15 @@
             display: flex;
             align-items: stretch;
         }
+
         .main-wrapper .col-md-5,
         .main-wrapper .col-md-7 {
             display: flex;
             flex-direction: column;
         }
-        .main-wrapper .col-md-5 > .left-image-box,
-        .main-wrapper .col-md-7 > .content-column {
+
+        .main-wrapper .col-md-5>.left-image-box,
+        .main-wrapper .col-md-7>.content-column {
             flex: 1 1 auto;
         }
 
@@ -132,11 +137,11 @@
     <div class="container main-wrapper">
 
         <div class="row">
-            
+
             <!-- LEFT IMAGE -->
             <div class="col-md-5">
                 <div class="left-image-box">
-                    <img src="/images/lira.png" alt="Staff" class="img-fluid">
+                    <img src="/images/louna.gif" alt="Staff" class="img-fluid">
                 </div>
             </div>
 
@@ -201,30 +206,31 @@
     </div>
 
     <script>
-        // Sync left avatar box height to right content (up to registrar button)
-        function syncAvatarHeight() {
-            try {
-                const content = document.querySelector('.content-column');
-                const leftBox = document.querySelector('.left-image-box');
-                if (!content || !leftBox) return;
-                const h = content.offsetHeight;
-                leftBox.style.height = h + 'px';
-                const img = leftBox.querySelector('img');
-                if (img) {
-                    img.style.height = '100%';
-                    img.style.width = 'auto';
-                    img.style.objectFit = 'contain';
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }
+        // // Sync left avatar box height to right content (up to registrar button)
+        // function syncAvatarHeight() {
+        //     try {
+        //         const content = document.querySelector('.content-column');
+        //         const leftBox = document.querySelector('.left-image-box');
+        //         if (!content || !leftBox) return;
+        //         const h = content.offsetHeight;
+        //         leftBox.style.height = h + 'px';
+        //         const img = leftBox.querySelector('img');
+        //         if (img) {
+        //             img.style.height = '100%';
+        //             img.style.width = 'auto';
+        //             img.style.objectFit = 'contain';
+        //         }
+        //     } catch (e) {
+        //         console.error(e);
+        //     }
+        // }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            syncAvatarHeight();
-            window.addEventListener('resize', syncAvatarHeight);
-        });
+        // document.addEventListener('DOMContentLoaded', () => {
+        //     syncAvatarHeight();
+        //     window.addEventListener('resize', syncAvatarHeight);
+        // });
     </script>
 
 </body>
+
 </html>
