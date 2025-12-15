@@ -29,7 +29,11 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: #fff;
+            background-color: #fff;
+            background-image: url('/images/LCCDO.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             margin-right: 20px;
             border: 3px solid #ffbad6;
         }

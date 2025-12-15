@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MonitorMedia;
 use App\Events\MediaUpdated;
+use App\Models\MonitorSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -13,7 +14,21 @@ class MediaController extends Controller
     public function index()
     {
         $media = MonitorMedia::orderBy('order')->get();
-        return view('media.index', compact('media'));
+        $settings = MonitorSetting::first();
+        return view('media.index', compact('media', 'settings'));
+    }
+
+    public function updateMarquee(Request $request)
+    {
+        $data = $request->validate([
+            'marquee_text' => 'required|string|max:2000',
+        ]);
+
+        $settings = MonitorSetting::firstOrCreate(['id' => 1]);
+        $settings->marquee_text = $data['marquee_text'];
+        $settings->save();
+
+        return back()->with('success', 'Marquee text updated successfully!');
     }
 
     public function store(Request $request)

@@ -194,8 +194,7 @@
 
         <div class="row bottom-row">
             <marquee class="custom-marquee mt-3" direction="left" loop="20">
-                Welcome to Our Service Center! Please wait for your number to be called.
-                Thank you for your patience and cooperation.
+                {{ $marqueeText }}
             </marquee>
         </div>
 

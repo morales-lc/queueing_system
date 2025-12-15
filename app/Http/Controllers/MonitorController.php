@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Counter;
 use App\Models\QueueTicket;
 use App\Models\MonitorMedia;
+use App\Models\MonitorSetting;
 
 class MonitorController extends Controller
 {
@@ -36,7 +37,10 @@ class MonitorController extends Controller
             ->orderBy('order')
             ->get();
 
-        return view('monitor.index', compact('cashierCounters', 'registrarCounters', 'nowServing', 'mediaItems'));
+        $settings = MonitorSetting::first();
+        $marqueeText = $settings->marquee_text ?? 'Welcome to Our Service Center! Please wait for your number to be called. Thank you for your patience and cooperation.';
+
+        return view('monitor.index', compact('cashierCounters', 'registrarCounters', 'nowServing', 'mediaItems', 'marqueeText'));
     }
 
     public function mediaFragment()

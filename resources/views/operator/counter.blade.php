@@ -33,7 +33,11 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: #fff;
+            background-color: #fff;
+            background-image: url('/images/LCCDO.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             margin-right: 20px;
             border: 3px solid #ffbad6;
         }
@@ -137,7 +141,7 @@
         </div>
 
         <div class="d-flex gap-2">
-            <a href="{{ route('media.index') }}" class="btn btn-light fw-bold">Manage Media</a>
+            <a href="{{ route('media.index') }}" class="btn btn-light fw-bold">Manage Monitor</a>
             <form method="post" action="{{ route('logout') }}">
                 @csrf
                 <button class="btn btn-light fw-bold">Logout</button>
@@ -153,8 +157,8 @@
 
             <div class="cashier-title">CASHIER #{{ $counter->name }}</div>
 
-            <!-- UI ONLY -->
-            <button class="call-again-btn">CALL AGAIN</button>
+            <!-- CALL AGAIN for currently serving: TTS only -->
+            <button type="button" class="call-again-btn">CALL AGAIN</button>
 
             <!-- CENTERED SERVING -->
             <div class="serving-center">
@@ -203,8 +207,10 @@
                     <span class="fw-bold">{{ $t->code }}</span>
 
                     <div class="btn-group">
-                        <button class="btn btn-success btn-sm">Call Again</button>
-
+                        <form method="post" action="{{ route('counter.callAgain', [$counter->id, $t->id]) }}">
+                            @csrf
+                            <button type="submit" class="btn btn-success btn-sm">Call Again</button>
+                        </form>
                         <form method="post" action="{{ route('counter.removeHold', [$counter->id, $t->id]) }}">
                             @method('DELETE')
                             @csrf
@@ -228,11 +234,22 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const counterId = {
-                {
-                    $counter - > id
-                }
-            };
+            const counterId = {{ $counter->id }};
+
+            // CALL AGAIN in currently serving section: just re-speak current ticket
+            const callAgainBtn = document.querySelector('.call-again-btn');
+            if (callAgainBtn) {
+                callAgainBtn.addEventListener('click', () => {
+                    const currentCode = @json(optional($nowServing)->code);
+                    if (!currentCode) {
+                        return;
+                    }
+                    speak(
+                        'Now serving ' + currentCode +
+                        '. Please proceed to {{ ucfirst($counter->type) }} window {{ $counter->name }}'
+                    );
+                });
+            }
 
             window.Echo.channel('queue.{{ $counter->type }}')
                 .listen('.ticket.created', () => location.reload())

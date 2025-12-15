@@ -24,7 +24,11 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: #fff;
+            background-color: #fff;
+            background-image: url('/images/LCCDO.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             margin-right: 20px;
             border: 3px solid #ffbad6;
         }
@@ -115,7 +119,7 @@
             color: #c2185b;
         }
 
-        ul {
+        ul,p {
             color: #8c0f45;
         }
 
@@ -168,10 +172,10 @@
 
                 <!-- FIRST BULLETS -->
                 <ul>
-                    <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li>
-                    <li>Aenean tempus tortor non orci varius eleifend nec non urna.</li>
-                    <li>Donec posuere quam ut ligula laoreet, a posuere risus mattis.</li>
-                    <li>In mattis enim vel pharentra scelerisque.</li>
+                    <li>Payments</li>
+                    <li>Statement of Accounts</li>
+                    <li>Examination Permit</li>
+                    <li>Purchase of P.E. Uniforms</li>
                 </ul>
 
                 <!-- CASHIER BUTTON -->
@@ -185,11 +189,14 @@
                 <div class="divider"></div>
 
                 <!-- SECOND BULLETS -->
+                <p>Request of Documents such as:</p>
                 <ul>
-                    <li>Vestibulum sed lectus sodales, pretium enim a, rutrum diam.</li>
-                    <li>Proin quis orci ac erat condimentum vestibulum vel a felis.</li>
-                    <li>Vestibulum eu arcu aliquam, ornare lacus in, semper lectus.</li>
-                    <li>Cras sed orci cursus, vestibulum ex eu, sodales ligula.</li>
+                    
+                    <li>Transcript of Records</li>
+                    <li>, Honorable Dismissal</li>
+                    <li>Certifications</li>
+                    <li>Authentication</li>
+                    <li>Report Card</li>
                 </ul>
 
                 <!-- REGISTRAR BUTTON -->

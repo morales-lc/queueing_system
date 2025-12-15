@@ -76,7 +76,14 @@ class CounterController extends Controller
             ->get();
 
         $onHold = QueueTicket::where('service_type', $counter->type)
-            ->where('status', 'on_hold')
+            ->where(function ($query) {
+                $query->where('status', 'on_hold')
+                    ->orWhere(function ($q) {
+                        $q->where('status', 'serving')
+                            ->whereNotNull('hold_count')
+                            ->where('hold_count', '>', 0);
+                    });
+            })
             ->orderBy('updated_at', 'asc')
             ->get();
 
@@ -176,7 +183,7 @@ class CounterController extends Controller
 
     public function callAgain(Counter $counter, QueueTicket $ticket)
     {
-        if ($ticket->status === 'on_hold' && $ticket->service_type === $counter->type) {
+        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type) {
             $ticket->status = 'serving';
             $ticket->counter_id = $counter->id;
             $ticket->called_times = ($ticket->called_times ?? 0) + 1;
@@ -188,7 +195,7 @@ class CounterController extends Controller
 
     public function removeHold(Counter $counter, QueueTicket $ticket)
     {
-        if ($ticket->status === 'on_hold' && $ticket->service_type === $counter->type) {
+        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type) {
             $ticket->status = 'done';
             $ticket->save();
             event(new TicketUpdated('done', $ticket));

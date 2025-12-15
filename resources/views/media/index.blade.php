@@ -30,7 +30,11 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: #fff;
+            background-color: #fff;
+            background-image: url('/images/LCCDO.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             margin-right: 20px;
             border: 3px solid #ffbad6;
         }
@@ -118,7 +122,7 @@
 <div class="header-bar">
     <div class="left-section">
         <div class="circle"></div>
-        <h5 class="fw-bold">Manage Monitor Media</h5>
+        <h5 class="fw-bold">Manage Monitor</h5>
     </div>
     <a href="{{ auth()->user()->counter_id ? route('counter.show', auth()->user()->counter_id) : route('counter.index') }}" class="btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16" style="margin-right: 5px;">
@@ -135,6 +139,19 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
+
+    <!-- Marquee Text Settings -->
+    <div class="upload-box mb-4">
+        <h4 class="mb-3" style="color: #c2185b;">TV Marquee Text</h4>
+        <p class="text-muted">This text appears in the scrolling marquee at the bottom of the TV monitor.</p>
+        <form method="POST" action="{{ route('media.updateMarquee') }}">
+            @csrf
+            <div class="mb-3">
+                <textarea name="marquee_text" class="form-control" rows="3" required>{{ old('marquee_text', optional($settings)->marquee_text ?? 'Welcome to Our Service Center! Please wait for your number to be called. Thank you for your patience and cooperation.') }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" style="background: #ff78b6; border: none;">Save Marquee Text</button>
+        </form>
+    </div>
 
     @if($errors->any())
     <div class="alert alert-danger alert-dismissible fade show" role="alert">

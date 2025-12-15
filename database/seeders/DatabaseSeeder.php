@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\MonitorSetting;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\Counter;
 use Illuminate\Database\Seeder;
@@ -50,5 +51,11 @@ class DatabaseSeeder extends Seeder
                 ]
             );
         }
+
+        // Default monitor marquee text
+        MonitorSetting::firstOrCreate(
+            ['id' => 1],
+            ['marquee_text' => 'Welcome to Our Service Center! Please wait for your number to be called. Thank you for your patience and cooperation.']
+        );
     }
 }

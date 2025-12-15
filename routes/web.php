@@ -56,6 +56,7 @@ Route::middleware(['auth'])->group(function () {
     // Media management routes
     Route::get('/media', [MediaController::class, 'index'])->name('media.index');
     Route::post('/media', [MediaController::class, 'store'])->name('media.store');
+    Route::post('/media/marquee', [MediaController::class, 'updateMarquee'])->name('media.updateMarquee');
     Route::delete('/media/{id}', [MediaController::class, 'destroy'])->name('media.destroy');
     Route::patch('/media/{id}/toggle', [MediaController::class, 'toggleActive'])->name('media.toggleActive');
     Route::post('/media/order', [MediaController::class, 'updateOrder'])->name('media.updateOrder');
