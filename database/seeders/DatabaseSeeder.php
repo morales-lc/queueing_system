@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
                 ['email' => "cashier{$i}@queue.local"],
                 [
                     'name' => "Cashier Window {$i}",
-                    'password' => bcrypt('password123'),
+                    'password' => bcrypt('password'),
                     'role' => 'cashier',
                     'counter_id' => $counter->id
                 ]
