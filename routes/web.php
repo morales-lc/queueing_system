@@ -33,6 +33,7 @@ Route::get('/kiosk/ticket/{ticket}', [KioskController::class, 'showTicket'])->na
 // Monitor (TV)
 Route::get('/monitor', [MonitorController::class, 'index'])->name('monitor.index');
 Route::get('/monitor/media', [MonitorController::class, 'mediaFragment'])->name('monitor.media');
+Route::get('/monitor/marquee', [MonitorController::class, 'marquee'])->name('monitor.marquee');
 
 // Counter (Registrar/Cashier) - Requires authentication
 Route::middleware(['auth'])->group(function () {

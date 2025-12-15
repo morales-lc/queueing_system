@@ -28,6 +28,8 @@ class MediaController extends Controller
         $settings->marquee_text = $data['marquee_text'];
         $settings->save();
 
+        event(new MediaUpdated('marquee'));
+
         return back()->with('success', 'Marquee text updated successfully!');
     }
 

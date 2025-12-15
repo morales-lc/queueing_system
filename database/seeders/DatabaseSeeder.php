@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
         foreach (range(1, 4) as $i) {
             $counter = Counter::where('type', 'cashier')->where('name', (string)$i)->first();
             User::firstOrCreate(
-                ['email' => "cashier{$i}"],
+                ['email' => "cashier{$i}@queue.local"],
                 [
                     'name' => "Cashier Window {$i}",
                     'password' => bcrypt('password123'),

@@ -43,6 +43,16 @@ class MonitorController extends Controller
         return view('monitor.index', compact('cashierCounters', 'registrarCounters', 'nowServing', 'mediaItems', 'marqueeText'));
     }
 
+    public function marquee()
+    {
+        $settings = MonitorSetting::first();
+        $marqueeText = $settings->marquee_text ?? 'Welcome to Our Service Center! Please wait for your number to be called. Thank you for your patience and cooperation.';
+
+        return response()->json([
+            'marqueeText' => $marqueeText,
+        ]);
+    }
+
     public function mediaFragment()
     {
         $mediaItems = MonitorMedia::where('is_active', true)

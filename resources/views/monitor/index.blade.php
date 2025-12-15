@@ -307,13 +307,25 @@
             // Listen for media changes and refresh the right panel
             window.Echo.channel('monitor.media').listen('.media.updated', async (e) => {
                 try {
+                    // Refresh media slides
                     const resp = await fetch('{{ route('monitor.media') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-                    if (!resp.ok) return;
-                    const html = await resp.text();
-                    const panel = document.getElementById('mediaPanel');
-                    if (panel) {
-                        panel.innerHTML = html;
-                        initSlideshow();
+                    if (resp.ok) {
+                        const html = await resp.text();
+                        const panel = document.getElementById('mediaPanel');
+                        if (panel) {
+                            panel.innerHTML = html;
+                            initSlideshow();
+                        }
+                    }
+
+                    // Refresh marquee text
+                    const marqueeResp = await fetch('{{ route('monitor.marquee') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (marqueeResp.ok) {
+                        const data = await marqueeResp.json();
+                        const marqueeEl = document.querySelector('.custom-marquee');
+                        if (marqueeEl && data.marqueeText) {
+                            marqueeEl.textContent = data.marqueeText;
+                        }
                     }
                 } catch (_) {}
             });
