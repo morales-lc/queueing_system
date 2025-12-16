@@ -43,16 +43,27 @@ class KioskController extends Controller
             'priority' => 'required|in:pwd_senior_pregnant,student,parent',
         ]);
 
-        // If printing is enabled, ensure printer is online before generating a code
-        // Skip printer check for HTTP printing (handled by remote print server)
-        if (config('app.printer_enabled', false) && config('app.printer_type') !== 'http') {
-            // Use the actual Windows printer name as reported by Get-Printer
-            $printerShareName = 'EPSON TM-T82II Receipt';
-            // Use strict check to prevent ticket generation when printer is disconnected
-            if (!$this->isPrinterOnlineStrict($printerShareName)) {
-                // Redirect to index with error message
-                return redirect()->route('kiosk.index')
-                    ->withErrors(['printer' => 'Printer is not connected. Please ask staff for assistance and try again once connected.']);
+        // If printing is enabled, ensure printer is online / ready before generating a code
+        if (config('app.printer_enabled', false)) {
+            $printerType = config('app.printer_type', 'windows');
+
+            // For HTTP printing, ask the Windows print server /health endpoint
+            if ($printerType === 'http') {
+                if (!$this->isHttpPrinterReady()) {
+                    return redirect()->route('kiosk.index')
+                        ->withErrors([
+                            'printer' => 'Printer is not connected or no paper is left. Please ask staff for assistance.',
+                        ]);
+                }
+            } else {
+                // Direct Windows / network printing: use strict PowerShell-based status
+                $printerShareName = 'EPSON TM-T82II Receipt';
+                if (!$this->isPrinterOnlineStrict($printerShareName)) {
+                    return redirect()->route('kiosk.index')
+                        ->withErrors([
+                            'printer' => 'Printer is not connected or no paper is left. Please ask staff for assistance.',
+                        ]);
+                }
             }
         }
 
@@ -233,6 +244,59 @@ class KioskController extends Controller
             Log::error('Make sure the print server is running on the Windows 11 computer');
         } catch (\Throwable $e) {
             Log::error('HTTP print failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Check HTTP-based printer health by calling the Windows print server /health endpoint.
+     * Returns true only when the remote server reports it can actually print.
+     */
+    protected function isHttpPrinterReady(): bool
+    {
+        try {
+            $printerTarget = config('app.printer_target');
+
+            if (!$printerTarget) {
+                Log::error('PRINTER_TARGET not configured in .env; treating HTTP printer as unavailable.');
+                return false;
+            }
+
+            // Derive health URL from the print URL, e.g. http://host:3000/print -> http://host:3000/health
+            $base = rtrim($printerTarget, '/');
+            $healthUrl = preg_replace('#/print$#', '/health', $base);
+            if (!$healthUrl) {
+                $healthUrl = $base . '/health';
+            }
+
+            Log::info('Checking HTTP printer health at: ' . $healthUrl);
+
+            $response = \Illuminate\Support\Facades\Http::timeout(3)->get($healthUrl);
+
+            if (!$response->successful()) {
+                Log::warning('Printer health check failed with status: ' . $response->status());
+                return false;
+            }
+
+            $data = $response->json() ?: [];
+
+            // Preferred: Python print server returns explicit can_print flag
+            if (array_key_exists('can_print', $data)) {
+                return (bool) $data['can_print'];
+            }
+
+            // Backwards compatibility: if only "status":"online" is present
+            if (isset($data['status']) && strtolower((string) $data['status']) === 'online') {
+                return true;
+            }
+
+            // If we cannot be sure, block ticket generation to avoid unprinted tickets
+            return false;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Cannot reach HTTP printer health endpoint: ' . $e->getMessage());
+            return false;
+        } catch (\Throwable $e) {
+            Log::error('HTTP printer health check failed: ' . $e->getMessage());
+            return false;
         }
     }
 
