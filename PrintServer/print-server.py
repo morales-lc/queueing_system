@@ -34,9 +34,16 @@ def health():
     try:
         # Query detailed printer info (PRINTER_INFO_2)
         info = win32print.GetPrinter(hPrinter, 2)
-        # PRINTER_INFO_2 layout: Status is field index 18
-        # https://learn.microsoft.com/windows/win32/printdocs/printer-info-2
-        status = info[18]
+
+        # pywin32 may return either a dict-like object or a tuple.
+        # Prefer the named 'Status' field when available; fall back to
+        # the legacy index 18 only if needed.
+        if isinstance(info, dict):
+            status = int(info.get("Status", 0) or 0)
+        else:
+            # PRINTER_INFO_2 layout: Status is field index 18
+            # https://learn.microsoft.com/windows/win32/printdocs/printer-info-2
+            status = int(info[18]) if len(info) > 18 else 0
 
         # Relevant status bits
         PRINTER_STATUS_PAUSED = 0x00000001
@@ -45,6 +52,8 @@ def health():
         PRINTER_STATUS_PAPER_OUT = 0x00000010
         PRINTER_STATUS_PAPER_PROBLEM = 0x00000040
         PRINTER_STATUS_OFFLINE = 0x00000080
+        PRINTER_STATUS_PRINTING = 0x00000400
+        PRINTER_STATUS_NOT_AVAILABLE = 0x00001000
 
         issues = []
         if status & PRINTER_STATUS_OFFLINE:
@@ -57,6 +66,8 @@ def health():
             issues.append("paper_problem")
         if status & PRINTER_STATUS_ERROR:
             issues.append("error")
+        if status & PRINTER_STATUS_NOT_AVAILABLE:
+            issues.append("not_available")
 
         can_print = len(issues) == 0
 

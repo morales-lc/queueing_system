@@ -229,9 +229,9 @@
             <!-- COLUMN 1: PWD/SENIOR/PREGNANT -->
             <div class="button-column">
                 <ul>
-                    <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li>
-                    <li>Aenean tempus tortor non orci varius eleifend nec non urna.</li>
-                    <li>Donec posuere quam ut ligula laoreet, a posuere risus mattis.</li>
+                    <li>Persons with disabilities</li>
+                    <li>60+ years old</li>
+                    <li>Pregnant Woman</li>
                     <li>In mattis enim vel pharentra scelerisque.</li>
                 </ul>
                 <button type="button" class="btn priority-btn" onclick="showConfirmModal('{{ $service }}', 'pwd_senior_pregnant', 'PWD/SENIOR/PREGNANT')">
