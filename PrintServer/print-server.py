@@ -54,6 +54,7 @@ def health():
         PRINTER_STATUS_OFFLINE = 0x00000080
         PRINTER_STATUS_PRINTING = 0x00000400
         PRINTER_STATUS_NOT_AVAILABLE = 0x00001000
+        PRINTER_STATUS_DOOR_OPEN = 0x00400000 #printer open 
 
         issues = []
         if status & PRINTER_STATUS_OFFLINE:
@@ -62,6 +63,8 @@ def health():
             issues.append("paper_out")
         if status & PRINTER_STATUS_PAPER_JAM:
             issues.append("paper_jam")
+        if status & PRINTER_STATUS_DOOR_OPEN:
+            issues.append("door_open")         
         if status & PRINTER_STATUS_PAPER_PROBLEM:
             issues.append("paper_problem")
         if status & PRINTER_STATUS_ERROR:

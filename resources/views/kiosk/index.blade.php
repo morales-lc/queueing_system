@@ -8,125 +8,157 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-        body {
-            background-color: #ffedf5;
-        }
+    html, body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden; /* no page scrolling */
+    }
 
-        .header-bar {
-            background: linear-gradient(90deg, #ff4fa0, #ff82c4);
-            padding: 15px 30px;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
-        }
+    body {
+        background-color: #ffedf5;
+        display: flex;
+        flex-direction: column;
+    }
 
-        .header-bar .circle {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: #fff;
-            background-image: url('/images/LCCDO.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            margin-right: 20px;
-            border: 3px solid #ffbad6;
-        }
+    /* HEADER */
+    .header-bar {
+        background: linear-gradient(90deg, #ff4fa0, #ff82c4);
+        padding: 15px 30px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
+        flex-shrink: 0;
+    }
 
-        .header-bar h5 {
-            color: #fff;
-        }
+    .header-bar .circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #fff url('/images/LCCDO.png') center / cover no-repeat;
+        margin-right: 20px;
+        border: 3px solid #ffbad6;
+    }
 
+    .header-bar h5 {
+        color: #fff;
+    }
+
+    /* MAIN WRAPPER */
+.main-wrapper {
+    flex: 1;
+    background: white;
+
+    max-width: 1400px;   /* keeps it kiosk-friendly */
+    width: 100%;
+
+    margin: 20px auto;   /* centers horizontally */
+    padding: 20px;
+
+    border-radius: 20px;
+    border: 3px solid #ffbad6;
+    box-shadow: 0 4px 12px rgba(255, 120, 170, 0.3);
+
+    display: flex;
+    flex-direction: column;
+}
+
+
+    .main-wrapper .row {
+        flex: 1;
+        display: flex;
+        align-items: stretch;
+    }
+
+    /* LEFT IMAGE */
+    .left-image-box {
+        background: #ffe6f3;
+        border-radius: 15px;
+        border: 2px solid #ffc1d9;
+        box-shadow: 0 3px 6px rgba(255, 150, 180, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .left-image-box img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
+    }
+
+    /* RIGHT CONTENT */
+    .content-column {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden; /* prevents layout break */
+    }
+
+    .content-column > * {
+        flex-shrink: 0;
+    }
+
+    /* BUTTONS */
+    .service-btn {
+        width: 100%;
+        padding: 18px;
+        font-size: clamp(20px, 2.5vw, 30px);
+        font-weight: bold;
+        border-radius: 15px;
+        background: #ff78b6;
+        color: white;
+        border: none;
+        box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
+        transition: all 0.3s ease;
+    }
+
+    .service-btn:hover {
+        background: #ff4fa0;
+        transform: translateY(-2px);
+    }
+
+    /* TEXT */
+    .instruction-text {
+        font-size: clamp(12px, 1.2vw, 14px);
+        font-weight: bold;
+        text-align: center;
+        color: #c2185b;
+        margin-bottom: 10px;
+    }
+
+    ul, p {
+        color: #8c0f45;
+        font-size: clamp(13px, 1.2vw, 15px);
+        margin-bottom: 8px;
+    }
+
+    ul li {
+        margin-bottom: 4px;
+    }
+
+    .divider {
+        border-top: 2px solid #ffbad6;
+        margin: 12px 0;
+    }
+
+    /* MOBILE SAFETY */
+    @media (max-width: 768px) {
         .main-wrapper {
-            background: white;
-            padding: 30px;
-            margin-top: 25px;
-            border-radius: 20px;
-            border: 3px solid #ffbad6;
-            box-shadow: 0 4px 12px rgba(255, 120, 170, 0.3);
-            /* Help left avatar match right content height */
-            display: block;
+            margin: 10px;
+            padding: 15px;
         }
 
-        .left-image-box {
-            background: #ffe6f3;
-            padding: 0;
-            border-radius: 15px;
-            border: 2px solid #ffc1d9;
-            box-shadow: 0 3px 6px rgba(255, 150, 180, 0.25);
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-        }
-
-        .left-image-box img {
-            max-height: 100%;
-            max-width: 100%;
-            height: auto;
-            width: auto;
-            object-fit: contain;
-        }
-
-        /* Make columns equal height so avatar aligns with registrar button area */
-        .main-wrapper .row {
-            display: flex;
-            align-items: stretch;
-        }
-
-        .main-wrapper .col-md-5,
-        .main-wrapper .col-md-7 {
-            display: flex;
+        .row {
             flex-direction: column;
         }
 
-        .main-wrapper .col-md-5>.left-image-box,
-        .main-wrapper .col-md-7>.content-column {
-            flex: 1 1 auto;
+        .left-image-box {
+            max-height: 35vh;
         }
-
-        .service-btn {
-            width: 100%;
-            padding: 20px;
-            font-size: 30px;
-            font-weight: bold;
-            border-radius: 15px;
-            background: #ff78b6;
-            color: white;
-            border: none;
-            box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
-            transition: all 0.3s ease;
-        }
-
-        .service-btn:hover {
-            background: #ff4fa0;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(255, 60, 140, 0.5);
-        }
-
-        .divider {
-            border-top: 2px solid #ffbad6;
-            margin: 30px 0;
-        }
-
-        .instruction-text {
-            font-size: 13px;
-            font-weight: bold;
-            text-align: center;
-            margin-top: 5px;
-            margin-bottom: 20px;
-            color: #c2185b;
-        }
-
-        ul,p {
-            color: #8c0f45;
-        }
-
-        ul li {
-            margin-bottom: 8px;
-        }
-    </style>
+    }
+</style>
 </head>
 
 <body>
@@ -138,7 +170,7 @@
 
     </div>
 
-    <div class="container main-wrapper">
+    <div class="main-wrapper mx-auto">
 
         <div class="row">
 
