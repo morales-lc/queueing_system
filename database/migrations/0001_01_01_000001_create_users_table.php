@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('password');
             $table->enum('role', ['cashier', 'registrar'])->default('cashier');
             $table->foreignId('counter_id')->nullable()->constrained('counters')->nullOnDelete();
-            $table->string('session_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

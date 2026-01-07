@@ -155,7 +155,7 @@
         <!-- LEFT -->
         <div class="left-panel">
 
-            <div class="cashier-title">CASHIER #{{ $counter->name }}</div>
+
 
             <!-- CALL AGAIN for currently serving: TTS only -->
             <button type="button" class="call-again-btn">CALL AGAIN</button>

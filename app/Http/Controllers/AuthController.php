@@ -27,40 +27,31 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (Auth::attempt($credentials, $request->filled('remember'))) {
-            $user = Auth::user();
-            $currentSessionId = $request->session()->getId();
-            
-            // Check if user is already logged in from another session
-            if ($user->session_id && $user->session_id !== $currentSessionId) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-                
-                return back()->withErrors([
-                    'email' => 'This account is already logged in on another device. Please logout from the other device first.'
-                ])->onlyInput('email');
-            }
-            
+        // Attempt login
+        if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            
-            // Store current session ID
-            $user->session_id = $currentSessionId;
-            $user->save();
-            
+
+            // Enforce strict single login: logout all other devices
+            Auth::logoutOtherDevices($credentials['password']);
+
+            $user = Auth::user();
+
             // Claim the counter automatically
             if ($user->counter_id) {
                 /** @var Counter $counter */
                 $counter = $user->counter;
                 $counter->claimed = true;
                 $counter->save();
-                
+
                 // Broadcast counter availability change
                 event(new CounterStatusChanged($counter, 'available'));
-                
+
                 return redirect()->route('counter.show', $user->counter_id);
             }
-            
+
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
             return redirect()->route('login')->withErrors([
                 'email' => 'Your account is not assigned to any counter.'
             ]);
@@ -93,11 +84,7 @@ class AuthController extends Controller
             }
         }
 
-        // Clear session ID
-        if ($user) {
-            $user->session_id = null;
-            $user->save();
-        }
+        // 
 
         Auth::logout();
 

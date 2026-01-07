@@ -8,152 +8,161 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-    html, body {
-        height: 100%;
-        margin: 0;
-        overflow-x: hidden;
-    }
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            overflow-x: hidden;
+        }
 
-    body {
-        background-color: #ffedf5;
-        min-height: 100vh;
-        width: 100vw;
-    }
+        body {
+            background-color: #ffedf5;
+            min-height: 100vh;
+            width: 100vw;
+        }
 
-    /* HEADER */
-    .header-bar {
-        background: linear-gradient(90deg, #ff4fa0, #ff82c4);
-        padding: 32px 30px 32px 30px;
-        display: flex;
-        align-items: center;
-        box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
-        flex-shrink: 0;
-    }
+        /* HEADER */
+        .header-bar {
+            background: linear-gradient(90deg, #ff4fa0, #ff82c4);
+            padding: 32px 30px 32px 30px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
+            flex-shrink: 0;
+        }
 
-    .header-bar .circle {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: #fff url('/images/LCCDO.png') center / cover no-repeat;
-        margin-right: 20px;
-        border: 3px solid #ffbad6;
-    }
+        .header-bar .circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #fff url('/images/LCCDO.png') center / cover no-repeat;
+            margin-right: 20px;
+            border: 3px solid #ffbad6;
+        }
 
-    .header-bar h5 {
-        color: #fff;
-    }
+        .header-bar h5 {
+            color: #fff;
+        }
 
-    /* MAIN WRAPPER */
-    .main-wrapper {
-        background: white;
-        padding: 40px 60px;
-        margin: 0;
-        border-radius: 20px;
-        border: 3px solid #ffbad6;
-        box-shadow: 0 4px 12px rgba(255, 120, 170, 0.3);
-        min-height: calc(100vh - 80px);
-        width: 100vw;
-        max-width: 100vw;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .main-wrapper .row {
-        flex: 1;
-        display: flex;
-        align-items: stretch;
-    }
-
-    /* LEFT IMAGE */
-    .left-image-box {
-        background: #ffe6f3;
-        border-radius: 15px;
-        border: 2px solid #ffc1d9;
-        box-shadow: 0 3px 6px rgba(255, 150, 180, 0.25);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        overflow: hidden;
-    }
-
-    .left-image-box img {
-        max-height: 100%;
-        max-width: 100%;
-        object-fit: contain;
-    }
-
-    /* RIGHT CONTENT */
-    .content-column {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        overflow: hidden; /* prevents layout break */
-    }
-
-    .content-column > * {
-        flex-shrink: 0;
-    }
-
-    /* BUTTONS */
-    .service-btn {
-        width: 100%;
-        padding: 18px;
-        font-size: clamp(20px, 2.5vw, 30px);
-        font-weight: bold;
-        border-radius: 15px;
-        background: #ff78b6;
-        color: white;
-        border: none;
-        box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
-        transition: all 0.3s ease;
-    }
-
-    .service-btn:hover {
-        background: #ff4fa0;
-        transform: translateY(-2px);
-    }
-
-    /* TEXT */
-    .instruction-text {
-        font-size: clamp(12px, 1.2vw, 14px);
-        font-weight: bold;
-        text-align: center;
-        color: #c2185b;
-        margin-bottom: 10px;
-    }
-
-    ul, p {
-        color: #8c0f45;
-        font-size: clamp(13px, 1.2vw, 15px);
-        margin-bottom: 8px;
-    }
-
-    ul li {
-        margin-bottom: 4px;
-    }
-
-    .divider {
-        border-top: 2px solid #ffbad6;
-        margin: 12px 0;
-    }
-
-    /* MOBILE SAFETY */
-    @media (max-width: 768px) {
+        /* MAIN WRAPPER */
         .main-wrapper {
-            padding: 10px 2px;
-            margin: 2px;
-            border-radius: 10px;
-        }
-        .row {
+            background: white;
+            padding: 40px 60px;
+            margin: 0;
+            border-radius: 20px;
+            border: 3px solid #ffbad6;
+            box-shadow: 0 4px 12px rgba(255, 120, 170, 0.3);
+            min-height: calc(100vh - 80px);
+            width: 100vw;
+            max-width: 100vw;
+            display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
+
+        .main-wrapper .row {
+            flex: 1;
+            display: flex;
+            align-items: stretch;
+        }
+
+        /* LEFT IMAGE */
         .left-image-box {
-            max-height: 35vh;
+            background: #ffe6f3;
+            border-radius: 15px;
+            border: 2px solid #ffc1d9;
+            box-shadow: 0 3px 6px rgba(255, 150, 180, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            overflow: hidden;
+
+
         }
-    }
-</style>
+
+        .left-image-box img {
+            max-width: 70%;
+            max-height: 100%;
+            object-fit: contain;
+
+
+        }
+
+        /* RIGHT CONTENT */
+        .content-column {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            /* prevents layout break */
+        }
+
+        .content-column>* {
+            flex-shrink: 0;
+        }
+
+        /* BUTTONS */
+        .service-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: clamp(20px, 2.5vw, 30px);
+            font-weight: bold;
+            border-radius: 15px;
+            background: #ff78b6;
+            color: white;
+            border: none;
+            box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
+            transition: all 0.3s ease;
+        }
+
+        .service-btn:hover {
+            background: #ff4fa0;
+            transform: translateY(-2px);
+        }
+
+        /* TEXT */
+        .instruction-text {
+            font-size: clamp(12px, 1.2vw, 14px);
+            font-weight: bold;
+            text-align: center;
+            color: #c2185b;
+            margin-bottom: 10px;
+        }
+
+        ul,
+        p {
+            color: #8c0f45;
+            font-size: clamp(13px, 1.2vw, 15px);
+            margin-bottom: 8px;
+        }
+
+        ul li {
+            margin-bottom: 4px;
+        }
+
+        .divider {
+            border-top: 2px solid #ffbad6;
+            margin: 12px 0;
+        }
+
+        /* MOBILE SAFETY */
+        @media (max-width: 768px) {
+            .main-wrapper {
+                padding: 10px 2px;
+                margin: 2px;
+                border-radius: 10px;
+            }
+
+            .row {
+                flex-direction: column;
+            }
+
+            .left-image-box {
+                max-height: 35vh;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -218,12 +227,12 @@
                 <!-- SECOND BULLETS -->
                 <p>Request of Documents such as:</p>
                 <ul>
-                    
+
                     <li>Transcript of Records</li>
                     <li>Honorable Dismissal</li>
                     <li>Certifications</li>
                     <li>Authentication</li>
-                    <li>Report Card</li>
+                    
                 </ul>
 
                 <!-- REGISTRAR BUTTON -->
