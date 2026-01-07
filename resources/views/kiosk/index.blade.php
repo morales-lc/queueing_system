@@ -11,19 +11,19 @@
     html, body {
         height: 100%;
         margin: 0;
-        overflow: hidden; /* no page scrolling */
+        overflow-x: hidden;
     }
 
     body {
         background-color: #ffedf5;
-        display: flex;
-        flex-direction: column;
+        min-height: 100vh;
+        width: 100vw;
     }
 
     /* HEADER */
     .header-bar {
         background: linear-gradient(90deg, #ff4fa0, #ff82c4);
-        padding: 15px 30px;
+        padding: 32px 30px 32px 30px;
         display: flex;
         align-items: center;
         box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
@@ -44,24 +44,20 @@
     }
 
     /* MAIN WRAPPER */
-.main-wrapper {
-    flex: 1;
-    background: white;
-
-    max-width: 1400px;   /* keeps it kiosk-friendly */
-    width: 100%;
-
-    margin: 20px auto;   /* centers horizontally */
-    padding: 20px;
-
-    border-radius: 20px;
-    border: 3px solid #ffbad6;
-    box-shadow: 0 4px 12px rgba(255, 120, 170, 0.3);
-
-    display: flex;
-    flex-direction: column;
-}
-
+    .main-wrapper {
+        background: white;
+        padding: 40px 60px;
+        margin: 0;
+        border-radius: 20px;
+        border: 3px solid #ffbad6;
+        box-shadow: 0 4px 12px rgba(255, 120, 170, 0.3);
+        min-height: calc(100vh - 80px);
+        width: 100vw;
+        max-width: 100vw;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
 
     .main-wrapper .row {
         flex: 1;
@@ -146,14 +142,13 @@
     /* MOBILE SAFETY */
     @media (max-width: 768px) {
         .main-wrapper {
-            margin: 10px;
-            padding: 15px;
+            padding: 10px 2px;
+            margin: 2px;
+            border-radius: 10px;
         }
-
         .row {
             flex-direction: column;
         }
-
         .left-image-box {
             max-height: 35vh;
         }
@@ -225,7 +220,7 @@
                 <ul>
                     
                     <li>Transcript of Records</li>
-                    <li>, Honorable Dismissal</li>
+                    <li>Honorable Dismissal</li>
                     <li>Certifications</li>
                     <li>Authentication</li>
                     <li>Report Card</li>

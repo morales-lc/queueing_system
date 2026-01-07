@@ -9,8 +9,8 @@
     <style>
         html, body {
             height: 100%;
-            overflow: hidden;
             margin: 0;
+            overflow-x: hidden;
         }
 
         body {
@@ -19,7 +19,7 @@
 
         .header-bar {
             background: linear-gradient(90deg, #ff4fa0, #ff82c4);
-            padding: 15px 30px;
+            padding: 32px 30px 32px 30px;
             display: flex;
             align-items: center;
             box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
@@ -51,7 +51,7 @@
             border-radius: 20px;
             border: 3px solid #ffbad6;
             box-shadow: 0 4px 12px rgba(255, 120, 170, 0.3);
-            height: calc(100vh - 160px);
+            min-height: calc(100vh - 160px);
             overflow: hidden;
         }
 
@@ -62,6 +62,8 @@
 
         .logo-section img {
             width: 400px;
+            max-width: 90vw;
+            height: auto;
         }
 
         .instruction-text {
@@ -77,10 +79,13 @@
             justify-content: space-between;
             gap: 20px;
             margin-top: 30px;
+            flex-wrap: wrap;
         }
 
         .button-column {
-            flex: 1;
+            flex: 1 1 300px;
+            min-width: 260px;
+            max-width: 100%;
         }
 
         .priority-btn {
@@ -187,6 +192,67 @@
             background: #c0c0c0;
             transform: translateY(-2px);
         }
+
+        /* Responsive Styles */
+        @media (max-width: 1200px) {
+            .main-wrapper {
+                padding: 30px 10px;
+                margin: 10px;
+            }
+            .logo-section img {
+                width: 300px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .button-section {
+                flex-direction: column;
+                gap: 30px;
+            }
+            .button-column {
+                min-width: 0;
+            }
+            .main-wrapper {
+                padding: 20px 5px;
+            }
+            .logo-section img {
+                width: 220px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px 10px;
+            }
+            .header-bar .circle {
+                margin-bottom: 10px;
+                margin-right: 0;
+            }
+            .header-bar h5 {
+                font-size: 1.1rem;
+            }
+            .main-wrapper {
+                padding: 10px 2px;
+                margin: 2px;
+                border-radius: 10px;
+            }
+            .logo-section img {
+                width: 120px;
+            }
+            .priority-btn {
+                font-size: 18px;
+                padding: 12px;
+            }
+            .confirm-btn, .cancel-btn {
+                font-size: 16px;
+                padding: 10px;
+            }
+            .modal-body {
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 
@@ -225,7 +291,6 @@
 
         <!-- THREE COLUMN LAYOUT -->
         <div class="button-section">
-            
             <!-- COLUMN 1: PWD/SENIOR/PREGNANT -->
             <div class="button-column">
                 <ul>
@@ -238,7 +303,6 @@
                     PWD/SENIOR/PREGNANT
                 </button>
             </div>
-
             <!-- COLUMN 2: STUDENT -->
             <div class="button-column">
                 <ul>
@@ -251,7 +315,6 @@
                     STUDENT
                 </button>
             </div>
-
             <!-- COLUMN 3: PARENT -->
             <div class="button-column">
                 <ul>
@@ -264,7 +327,6 @@
                     PARENT
                 </button>
             </div>
-
         </div>
 
     </div>
