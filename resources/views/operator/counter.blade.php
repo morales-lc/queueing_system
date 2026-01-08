@@ -155,10 +155,13 @@
         <!-- LEFT -->
         <div class="left-panel">
 
-
-
-            <!-- CALL AGAIN for currently serving: TTS only -->
-            <button type="button" class="call-again-btn">CALL AGAIN</button>
+            <!-- CALL AGAIN for currently serving: only show if nowServing exists -->
+            @if($nowServing)
+            <form method="post" action="{{ route('counter.callAgain', [$counter->id, $nowServing->id]) }}" style="display:inline">
+                @csrf
+                <button type="submit" class="call-again-btn">CALL AGAIN</button>
+            </form>
+            @endif
 
             <!-- CENTERED SERVING -->
             <div class="serving-center">
@@ -228,40 +231,11 @@
 
     <!-- JS / ECHO  -->
     <script>
-        function speak(text) {
-            const u = new SpeechSynthesisUtterance(text);
-            window.speechSynthesis.speak(u);
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
             const counterId = {{ $counter->id }};
-
-            // CALL AGAIN in currently serving section: just re-speak current ticket
-            const callAgainBtn = document.querySelector('.call-again-btn');
-            if (callAgainBtn) {
-                callAgainBtn.addEventListener('click', () => {
-                    const currentCode = @json(optional($nowServing)->code);
-                    if (!currentCode) {
-                        return;
-                    }
-                    speak(
-                        'Now serving ' + currentCode +
-                        '. Please proceed to {{ ucfirst($counter->type) }} window {{ $counter->name }}'
-                    );
-                });
-            }
-
             window.Echo.channel('queue.{{ $counter->type }}')
                 .listen('.ticket.created', () => location.reload())
-                .listen('.ticket.serving', (e) => {
-                    if (e.ticket.counter_id === counterId) {
-                        speak(
-                            'Now serving ' + e.ticket.code +
-                            '. Please proceed to {{ ucfirst($counter->type) }} window {{ $counter->name }}'
-                        );
-                    }
-                    location.reload();
-                })
+                .listen('.ticket.serving', () => location.reload())
                 .listen('.ticket.on_hold', () => location.reload())
                 .listen('.ticket.done', () => location.reload());
         });
