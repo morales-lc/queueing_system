@@ -19,7 +19,7 @@
 
         .header-bar {
             background: linear-gradient(90deg, #ff4fa0, #ff82c4);
-            padding: 32px 30px 32px 30px;
+            padding: 22px 20px 22px 20px;
             display: flex;
             align-items: center;
             box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
@@ -117,6 +117,7 @@
 
         ul li {
             margin-bottom: 8px;
+            font-size: larger;
         }
 
         /* Modal Styles */
@@ -297,7 +298,7 @@
                     <li>Persons with disabilities</li>
                     <li>60+ years old</li>
                     <li>Pregnant Woman</li>
-                    <li>In mattis enim vel pharentra scelerisque.</li>
+                    
                 </ul>
                 <button type="button" class="btn priority-btn" onclick="showConfirmModal('{{ $service }}', 'pwd_senior_pregnant', 'PWD/SENIOR/PREGNANT')">
                     PWD/SENIOR/PREGNANT
@@ -306,10 +307,10 @@
             <!-- COLUMN 2: STUDENT -->
             <div class="button-column">
                 <ul>
-                    <li>Vestibulum sed lectus sodales, pretium enim a, rutrum diam.</li>
-                    <li>Proin quis orci ac erat condimentum vestibulum vel a felis.</li>
-                    <li>Vestibulum eu arcu aliquam, ornare lacus in, semper lectus.</li>
-                    <li>Cras sed orci cursus, vestibulum ex eu, sodales ligula.</li>
+                    <li>Senior High</li>
+                    <li>College</li>
+                    <li>Graduate School</li>
+                    
                 </ul>
                 <button type="button" class="btn priority-btn" onclick="showConfirmModal('{{ $service }}', 'student', 'STUDENT')">
                     STUDENT
@@ -318,10 +319,10 @@
             <!-- COLUMN 3: PARENT -->
             <div class="button-column">
                 <ul>
-                    <li>Vestibulum sed lectus sodales, pretium enim a, rutrum diam.</li>
-                    <li>Proin quis orci ac erat condimentum vestibulum vel a felis.</li>
-                    <li>Vestibulum eu arcu aliquam, ornare lacus in, semper lectus.</li>
-                    <li>Cras sed orci cursus, vestibulum ex eu, sodales ligula.</li>
+                    <li>Parent of a student</li>
+                    <li>Legal guardian of a student</li>
+                    <li>Responsible family member of a student</li>
+                    
                 </ul>
                 <button type="button" class="btn priority-btn" onclick="showConfirmModal('{{ $service }}', 'parent', 'PARENT')">
                     PARENT

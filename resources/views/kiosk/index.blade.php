@@ -24,7 +24,7 @@
         /* HEADER */
         .header-bar {
             background: linear-gradient(90deg, #ff4fa0, #ff82c4);
-            padding: 32px 30px 32px 30px;
+            padding: 22px 20px 22px 20px;
             display: flex;
             align-items: center;
             box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
@@ -139,6 +139,7 @@
 
         ul li {
             margin-bottom: 4px;
+            font-size: larger;
         }
 
         .divider {
