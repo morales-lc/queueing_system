@@ -259,11 +259,22 @@
                 }
             }
 
+
+            // Helper to get window number (1-based) from counter id and type
+            function getWindowNumber(counterId, type) {
+                let counters = type === 'cashier' ? @json($cashierCounters) : @json($registrarCounters);
+                for (let i = 0; i < counters.length; i++) {
+                    if (counters[i].id === counterId) return i + 1;
+                }
+                return counterId; // fallback
+            }
+
             // CASHIER
             window.Echo.channel('queue.cashier').listen('.ticket.serving', (e) => {
                 playNotificationSound();
                 setTimeout(() => {
-                    speak('Now serving ' + e.ticket.code + '. Please proceed to Cashier window ' + e.ticket.counter_id);
+                    const windowNum = getWindowNumber(e.ticket.counter_id, 'cashier');
+                    speak('Now serving ' + e.ticket.code + '. Please proceed to Cashier window ' + windowNum);
                     updateCounterTicket(e.ticket.counter_id, e.ticket.code);
                 }, 200);
             });
@@ -277,7 +288,8 @@
             window.Echo.channel('queue.registrar').listen('.ticket.serving', (e) => {
                 playNotificationSound();
                 setTimeout(() => {
-                    speak('Now serving ' + e.ticket.code + '. Please proceed to Registrar window ' + e.ticket.counter_id);
+                    const windowNum = getWindowNumber(e.ticket.counter_id, 'registrar');
+                    speak('Now serving ' + e.ticket.code + '. Please proceed to Registrar window ' + windowNum);
                     updateCounterTicket(e.ticket.counter_id, e.ticket.code);
                 }, 200);
             });
