@@ -86,6 +86,8 @@
             flex: 1 1 300px;
             min-width: 260px;
             max-width: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .priority-btn {
@@ -99,7 +101,7 @@
             border: none;
             box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
             transition: all 0.3s ease;
-            margin-top: 20px;
+            margin-top: auto;
         }
 
         .priority-btn:hover {
@@ -298,10 +300,11 @@
                     <li>Persons with disabilities</li>
                     <li>60+ years old</li>
                     <li>Pregnant Woman</li>
+                    <li>Legal Guardian/Parent of a student</li>
                     
                 </ul>
                 <button type="button" class="btn priority-btn" onclick="showConfirmModal('{{ $service }}', 'pwd_senior_pregnant', 'PWD/SENIOR/PREGNANT')">
-                    PWD/SENIOR/PREGNANT
+                    PWD/SENIOR/PREGNANT/PARENT
                 </button>
             </div>
             <!-- COLUMN 2: STUDENT -->
@@ -317,7 +320,7 @@
                 </button>
             </div>
             <!-- COLUMN 3: PARENT -->
-            <div class="button-column">
+            <!-- <div class="button-column">
                 <ul>
                     <li>Parent of a student</li>
                     <li>Legal guardian of a student</li>
@@ -327,7 +330,7 @@
                 <button type="button" class="btn priority-btn" onclick="showConfirmModal('{{ $service }}', 'parent', 'PARENT')">
                     PARENT
                 </button>
-            </div>
+            </div> -->
         </div>
 
     </div>

@@ -126,6 +126,46 @@
             font-weight: bold;
             margin-bottom: 10px;
         }
+
+        .queue-list-container,
+        .onhold-list-container {
+            max-height: 240px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .queue-list-container::-webkit-scrollbar,
+        .onhold-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .queue-list-container::-webkit-scrollbar-track,
+        .onhold-list-container::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .queue-list-container::-webkit-scrollbar-thumb,
+        .onhold-list-container::-webkit-scrollbar-thumb {
+            background: #999;
+            border-radius: 4px;
+        }
+
+        .queue-list-container::-webkit-scrollbar-thumb:hover,
+        .onhold-list-container::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        .next-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin-left: 8px;
+        }
     </style>
 </head>
 
@@ -141,7 +181,7 @@
         </div>
 
         <div class="d-flex gap-2">
-            <a href="{{ route('media.index') }}" class="btn btn-light fw-bold">Manage Monitor</a>
+            <a href="{{ route('media.index') }}" class="btn btn-light fw-bold">Manage TV Content</a>
             <form method="post" action="{{ route('logout') }}">
                 @csrf
                 <button class="btn btn-light fw-bold">Logout</button>
@@ -193,38 +233,45 @@
         <div class="right-panel">
 
             <div class="panel-title">QUEUE</div>
-            <ul class="list-group mb-4">
-                @forelse($queue as $t)
-                <li class="list-group-item text-center fw-bold">
-                    {{ $t->code }}
-                </li>
-                @empty
-                <li class="list-group-item text-center">No tickets.</li>
-                @endforelse
-            </ul>
+            <div class="queue-list-container">
+                <ul class="list-group mb-0">
+                    @forelse($queue as $index => $t)
+                    <li class="list-group-item text-center fw-bold">
+                        {{ $t->code }}
+                        @if($index === 0 && !$nowServing)
+                        <span class="next-badge">NEXT</span>
+                        @endif
+                    </li>
+                    @empty
+                    <li class="list-group-item text-center">No tickets.</li>
+                    @endforelse
+                </ul>
+            </div>
 
             <div class="panel-title">ON-HOLD</div>
-            <ul class="list-group">
-                @forelse($onHold as $t)
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span class="fw-bold">{{ $t->code }}</span>
+            <div class="onhold-list-container">
+                <ul class="list-group mb-0">
+                    @forelse($onHold as $t)
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">{{ $t->code }}</span>
 
-                    <div class="btn-group">
-                        <form method="post" action="{{ route('counter.callAgain', [$counter->id, $t->id]) }}">
-                            @csrf
-                            <button type="submit" class="btn btn-success btn-sm">Call Again</button>
-                        </form>
-                        <form method="post" action="{{ route('counter.removeHold', [$counter->id, $t->id]) }}">
-                            @method('DELETE')
-                            @csrf
-                            <button class="btn btn-outline-danger btn-sm">✕</button>
-                        </form>
-                    </div>
-                </li>
-                @empty
-                <li class="list-group-item text-center">No on-hold tickets.</li>
-                @endforelse
-            </ul>
+                        <div class="btn-group">
+                            <form method="post" action="{{ route('counter.callAgain', [$counter->id, $t->id]) }}">
+                                @csrf
+                                <button type="submit" class="btn btn-success btn-sm">Call Again</button>
+                            </form>
+                            <form method="post" action="{{ route('counter.removeHold', [$counter->id, $t->id]) }}">
+                                @method('DELETE')
+                                @csrf
+                                <button class="btn btn-outline-danger btn-sm">✕</button>
+                            </form>
+                        </div>
+                    </li>
+                    @empty
+                    <li class="list-group-item text-center">No on-hold tickets.</li>
+                    @endforelse
+                </ul>
+            </div>
 
         </div>
     </div>
@@ -238,6 +285,77 @@
                 .listen('.ticket.serving', () => location.reload())
                 .listen('.ticket.on_hold', () => location.reload())
                 .listen('.ticket.done', () => location.reload());
+
+            // disable both NEXT and ON-HOLD buttons for 6 seconds
+            const nextPressTime = sessionStorage.getItem('nextPressTime_{{ $counter->id }}');
+            if (nextPressTime) {
+                const elapsed = Date.now() - parseInt(nextPressTime);
+                const remaining = 6000 - elapsed;
+                
+                if (remaining > 0) {
+                    // Disable ON-HOLD button
+                    const holdBtn = document.querySelector('.bottom-actions form[action*="hold"] button');
+                    if (holdBtn) {
+                        holdBtn.disabled = true;
+                        const originalText = holdBtn.textContent;
+                        holdBtn.textContent = 'Wait...';
+                        holdBtn.style.opacity = '0.6';
+                        
+                        setTimeout(() => {
+                            holdBtn.disabled = false;
+                            holdBtn.textContent = originalText;
+                            holdBtn.style.opacity = '1';
+                        }, remaining);
+                    }
+                    
+                    // Disable NEXT button
+                    const nextBtn = document.querySelector('.bottom-actions form[action*="next"] button');
+                    if (nextBtn) {
+                        nextBtn.disabled = true;
+                        const originalNextText = nextBtn.textContent;
+                        nextBtn.textContent = 'Wait...';
+                        nextBtn.style.opacity = '0.6';
+                        
+                        setTimeout(() => {
+                            nextBtn.disabled = false;
+                            nextBtn.textContent = originalNextText;
+                            nextBtn.style.opacity = '1';
+                            sessionStorage.removeItem('nextPressTime_{{ $counter->id }}');
+                        }, remaining);
+                    }
+                }
+            }
+
+            // Debounce for NEXT and ON-HOLD buttons
+            const forms = document.querySelectorAll('.bottom-actions form, .left-panel > form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    const btn = this.querySelector('button[type="submit"]');
+                    if (btn && btn.disabled) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    // If this is the NEXT button, store timestamp
+                    if (this.action.includes('next')) {
+                        sessionStorage.setItem('nextPressTime_{{ $counter->id }}', Date.now().toString());
+                    }
+                    
+                    if (btn) {
+                        btn.disabled = true;
+                        const originalText = btn.textContent;
+                        btn.textContent = 'Please wait...';
+                        btn.style.opacity = '0.6';
+                        
+                        // Re-enable after 10 seconds as fallback
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.textContent = originalText;
+                            btn.style.opacity = '1';
+                        }, 10000);
+                    }
+                });
+            });
         });
     </script>
 

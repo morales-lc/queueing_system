@@ -199,7 +199,8 @@
                 @enderror
 
                 <!-- LOGO -->
-                <div class="text-center mb-1">
+
+                <div class="text-center mb-1" style="user-select: none; cursor: default;">
                     <img src="/images/Lourdes.png" width="280">
                 </div>
 

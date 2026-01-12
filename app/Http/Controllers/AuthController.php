@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Counter;
+use App\Models\User;
 use App\Events\CounterStatusChanged;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -23,16 +25,28 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'username' => 'required|string',
             'password' => 'required',
         ]);
+
+        // Check if user already has an active session
+        $user = User::where('username', $credentials['username'])->first();
+        if ($user) {
+            $activeSessions = DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->where('last_activity', '>', now()->subMinutes(config('session.lifetime', 120))->timestamp)
+                ->count();
+
+            if ($activeSessions > 0) {
+                return back()->withErrors([
+                    'username' => 'This account is already logged in on another device. Please log out from the other device first.',
+                ])->onlyInput('username');
+            }
+        }
 
         // Attempt login
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-
-            // Enforce strict single login: logout all other devices
-            Auth::logoutOtherDevices($credentials['password']);
 
             $user = Auth::user();
 
@@ -53,13 +67,13 @@ class AuthController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
             return redirect()->route('login')->withErrors([
-                'email' => 'Your account is not assigned to any counter.'
+                'username' => 'Your account is not assigned to any counter.'
             ]);
         }
 
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+            'username' => 'The provided credentials do not match our records.',
+        ])->onlyInput('username');
     }
 
     public function logout(Request $request)

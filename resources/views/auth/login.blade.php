@@ -25,10 +25,10 @@
                     <form method="POST" action="{{ route('login') }}">
                         @csrf
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                   id="email" name="email" value="{{ old('email') }}" required autofocus>
-                            @error('email')
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control @error('username') is-invalid @enderror" 
+                                   id="username" name="username" value="{{ old('username') }}" required autofocus>
+                            @error('username')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -42,8 +42,6 @@
                             @enderror
                         </div>
 
-                        <input type="hidden" name="remember" value="1">
-
                         <button type="submit" class="btn btn-primary w-100">Login</button>
                     </form>
 
@@ -51,9 +49,9 @@
                         <small>
                             <strong>Login Credentials:</strong><br>
                             <strong>Cashier Windows:</strong><br>
-                            cashier1@queue.local to cashier4@queue.local<br>
+                            cashier1 to cashier4<br>
                             <strong>Registrar Windows:</strong><br>
-                            registrar1@queue.local to registrar4@queue.local<br>
+                            registrar1 to registrar4<br>
                             <strong>Password:</strong> password
                         </small>
                     </div>

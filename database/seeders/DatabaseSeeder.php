@@ -29,9 +29,10 @@ class DatabaseSeeder extends Seeder
         foreach (range(1, 4) as $i) {
             $counter = Counter::where('type', 'cashier')->where('name', (string)$i)->first();
             User::firstOrCreate(
-                ['email' => "cashier{$i}@queue.local"],
+                ['username' => "cashier{$i}"],
                 [
                     'name' => "Cashier Window {$i}",
+                    'email' => "cashier{$i}@queue.local",
                     'password' => bcrypt('password'),
                     'role' => 'cashier',
                     'counter_id' => $counter->id
@@ -42,9 +43,10 @@ class DatabaseSeeder extends Seeder
         foreach (range(1, 4) as $i) {
             $counter = Counter::where('type', 'registrar')->where('name', (string)$i)->first();
             User::firstOrCreate(
-                ['email' => "registrar{$i}@queue.local"],
+                ['username' => "registrar{$i}"],
                 [
                     'name' => "Registrar Window {$i}",
+                    'email' => "registrar{$i}@queue.local",
                     'password' => bcrypt('password'),
                     'role' => 'registrar',
                     'counter_id' => $counter->id
