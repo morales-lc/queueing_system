@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Select Priority</title>
@@ -7,7 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-        html, body {
+        html,
+        body {
             height: 100%;
             margin: 0;
             overflow-x: hidden;
@@ -67,7 +69,7 @@
         }
 
         .instruction-text {
-            font-size: 16px;
+            font-size: 24px;
             font-weight: bold;
             text-align: center;
             margin-bottom: 40px;
@@ -112,14 +114,14 @@
 
         ul {
             color: #8c0f45;
-            font-size: 14px;
+            font-size: 22px;
             padding-left: 20px;
             margin-bottom: 0;
         }
 
         ul li {
             margin-bottom: 8px;
-            font-size: larger;
+            font-size: 22px;
         }
 
         /* Modal Styles */
@@ -202,6 +204,7 @@
                 padding: 30px 10px;
                 margin: 10px;
             }
+
             .logo-section img {
                 width: 300px;
             }
@@ -212,14 +215,26 @@
                 flex-direction: column;
                 gap: 30px;
             }
+
             .button-column {
                 min-width: 0;
             }
+
             .main-wrapper {
                 padding: 20px 5px;
             }
+
             .logo-section img {
                 width: 220px;
+            }
+
+            .instruction-text {
+                font-size: 20px;
+            }
+
+            ul,
+            ul li {
+                font-size: 18px;
             }
         }
 
@@ -229,29 +244,46 @@
                 align-items: flex-start;
                 padding: 10px 10px;
             }
+
             .header-bar .circle {
                 margin-bottom: 10px;
                 margin-right: 0;
             }
+
             .header-bar h5 {
                 font-size: 1.1rem;
             }
+
             .main-wrapper {
                 padding: 10px 2px;
                 margin: 2px;
                 border-radius: 10px;
             }
+
             .logo-section img {
                 width: 120px;
             }
+
             .priority-btn {
                 font-size: 18px;
                 padding: 12px;
             }
-            .confirm-btn, .cancel-btn {
+
+            .instruction-text {
+                font-size: 16px;
+            }
+
+            ul,
+            ul li {
+                font-size: 15px;
+            }
+
+            .confirm-btn,
+            .cancel-btn {
                 font-size: 16px;
                 padding: 10px;
             }
+
             .modal-body {
                 padding: 10px;
             }
@@ -275,12 +307,13 @@
     <div class="main-wrapper">
 
         @error('printer')
-        <div class="alert alert-danger fw-bold" role="alert" style="border:2px solid #ffbad6; box-shadow:0 3px 6px rgba(255,60,140,0.25)">
-            <div class="d-flex align-items-center">
-                <span class="me-2">⚠️</span>
-                <span>{{ $message }}</span>
+            <div class="alert alert-danger fw-bold" role="alert"
+                style="border:2px solid #ffbad6; box-shadow:0 3px 6px rgba(255,60,140,0.25)">
+                <div class="d-flex align-items-center">
+                    <span class="me-2">⚠️</span>
+                    <span>{{ $message }}</span>
+                </div>
             </div>
-        </div>
         @enderror
 
         <!-- LOGO -->
@@ -301,9 +334,10 @@
                     <li>60+ years old</li>
                     <li>Pregnant Woman</li>
                     <li>Legal Guardian/Parent of a student</li>
-                    
+
                 </ul>
-                <button type="button" class="btn priority-btn" onclick="showConfirmModal('{{ $service }}', 'pwd_senior_pregnant', 'PWD/SENIOR/PREGNANT')">
+                <button type="button" class="btn priority-btn"
+                    onclick="showConfirmModal('{{ $service }}', 'pwd_senior_pregnant', 'PWD/SENIOR/PREGNANT')">
                     PWD/SENIOR/PREGNANT/PARENT
                 </button>
             </div>
@@ -313,9 +347,10 @@
                     <li>Senior High</li>
                     <li>College</li>
                     <li>Graduate School</li>
-                    
+
                 </ul>
-                <button type="button" class="btn priority-btn" onclick="showConfirmModal('{{ $service }}', 'student', 'STUDENT')">
+                <button type="button" class="btn priority-btn"
+                    onclick="showConfirmModal('{{ $service }}', 'student', 'STUDENT')">
                     STUDENT
                 </button>
             </div>
@@ -332,6 +367,14 @@
                 </button>
             </div> -->
         </div>
+        <div style="height:50px"></div>
+
+        <div class="d-flex justify-content-end mt-4">
+            <a href="{{ route('kiosk.index') }}" class="btn btn-light fw-bold" style="border:2px solid #ffbad6;">
+                ← Back
+            </a>
+        </div>
+
 
     </div>
 
@@ -364,11 +407,11 @@
             // Set modal content
             document.getElementById('modalService').textContent = service.charAt(0).toUpperCase() + service.slice(1);
             document.getElementById('modalPriority').textContent = priorityLabel;
-            
+
             // Set hidden form fields
             document.getElementById('hiddenService').value = service;
             document.getElementById('hiddenPriority').value = priority;
-            
+
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
             modal.show();
@@ -376,4 +419,5 @@
     </script>
 
 </body>
+
 </html>

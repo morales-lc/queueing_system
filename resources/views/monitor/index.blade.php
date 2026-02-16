@@ -95,13 +95,13 @@
             font-size: 3.5rem;
             font-weight: 900;
             text-align: center;
-            color: #d81b60;
+            color: #000000;
         }
 
         .ticket-code {
             flex: 1;
-            font-size: 3.5rem;
-            font-weight: 900;
+            font-size: 3.2rem;
+            font-weight: 700;
             padding-left: 1.5rem;
             padding-top: 0.35rem;
             padding-bottom: 0.35rem;
