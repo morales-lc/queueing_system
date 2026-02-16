@@ -67,14 +67,24 @@ class KioskController extends Controller
             }
         }
 
-        // Generate prefix (e.g., C-S, R-P, etc.)
-        $prefix = strtoupper(substr($validated['service'], 0, 1))
-            . strtoupper(substr($validated['priority'], 0, 1));
+        // Generate prefix and sequence bucket
+        // Student keeps S-series, all non-student priorities share P-series
+        $isStudent = $validated['priority'] === 'student';
+        $priorityPrefix = $isStudent ? 'S' : 'P';
 
-        // Reset daily: count only today's tickets for this service
-        $countToday = QueueTicket::where('service_type', $validated['service'])
-            ->whereDate('created_at', today())
-            ->count() + 1;
+        $prefix = strtoupper(substr($validated['service'], 0, 1)) . $priorityPrefix;
+
+        // Reset daily: count only today's tickets for this service and bucket
+        $countQuery = QueueTicket::where('service_type', $validated['service'])
+            ->whereDate('created_at', today());
+
+        if ($isStudent) {
+            $countQuery->where('priority', 'student');
+        } else {
+            $countQuery->where('priority', '!=', 'student');
+        }
+
+        $countToday = $countQuery->count() + 1;
 
         // Create the sequence number
         $sequence = str_pad((string)$countToday, 3, '0', STR_PAD_LEFT);
