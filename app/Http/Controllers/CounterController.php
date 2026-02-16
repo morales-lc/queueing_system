@@ -11,6 +11,116 @@ use Illuminate\Support\Facades\Auth;
 
 class CounterController extends Controller
 {
+    protected function getLastCalledTicket(string $serviceType): ?QueueTicket
+    {
+        return QueueTicket::where('service_type', $serviceType)
+            ->whereIn('status', ['serving', 'done', 'on_hold'])
+            ->where('called_times', '>', 0)
+            ->latest('updated_at')
+            ->first();
+    }
+
+    protected function getAlternatingStartBucket(string $serviceType, ?QueueTicket $nextStudent, ?QueueTicket $nextPriority): string
+    {
+        if (!$nextStudent) {
+            return 'priority';
+        }
+
+        if (!$nextPriority) {
+            return 'student';
+        }
+
+        $lastCalled = $this->getLastCalledTicket($serviceType);
+
+        if (!$lastCalled) {
+            return $nextStudent->created_at->lte($nextPriority->created_at) ? 'student' : 'priority';
+        }
+
+        return $lastCalled->priority === 'student' ? 'priority' : 'student';
+    }
+
+    protected function getNextPendingTicketAlternating(string $serviceType): ?QueueTicket
+    {
+        $nextStudent = QueueTicket::where('service_type', $serviceType)
+            ->where('status', 'pending')
+            ->where('priority', 'student')
+            ->orderBy('created_at')
+            ->first();
+
+        $nextPriority = QueueTicket::where('service_type', $serviceType)
+            ->where('status', 'pending')
+            ->where('priority', '!=', 'student')
+            ->orderBy('created_at')
+            ->first();
+
+        if (!$nextStudent && !$nextPriority) {
+            return null;
+        }
+
+        if (!$nextStudent) {
+            return $nextPriority;
+        }
+
+        if (!$nextPriority) {
+            return $nextStudent;
+        }
+
+        $startBucket = $this->getAlternatingStartBucket($serviceType, $nextStudent, $nextPriority);
+
+        return $startBucket === 'student' ? $nextStudent : $nextPriority;
+    }
+
+    protected function getPendingQueueAlternating(string $serviceType)
+    {
+        $studentQueue = QueueTicket::where('service_type', $serviceType)
+            ->where('status', 'pending')
+            ->where('priority', 'student')
+            ->orderBy('created_at')
+            ->get();
+
+        $priorityQueue = QueueTicket::where('service_type', $serviceType)
+            ->where('status', 'pending')
+            ->where('priority', '!=', 'student')
+            ->orderBy('created_at')
+            ->get();
+
+        if ($studentQueue->isEmpty() && $priorityQueue->isEmpty()) {
+            return collect();
+        }
+
+        if ($studentQueue->isEmpty()) {
+            return $priorityQueue;
+        }
+
+        if ($priorityQueue->isEmpty()) {
+            return $studentQueue;
+        }
+
+        $startBucket = $this->getAlternatingStartBucket($serviceType, $studentQueue->first(), $priorityQueue->first());
+        $result = collect();
+        $turn = $startBucket;
+
+        while ($studentQueue->isNotEmpty() || $priorityQueue->isNotEmpty()) {
+            if ($turn === 'student') {
+                if ($studentQueue->isNotEmpty()) {
+                    $result->push($studentQueue->shift());
+                    $turn = 'priority';
+                } elseif ($priorityQueue->isNotEmpty()) {
+                    $result->push($priorityQueue->shift());
+                }
+            } else {
+                if ($priorityQueue->isNotEmpty()) {
+                    $result->push($priorityQueue->shift());
+                    $turn = 'student';
+                } elseif ($studentQueue->isNotEmpty()) {
+                    $result->push($studentQueue->shift());
+                }
+            }
+        }
+
+        return $result;
+    }
+
     public function select()
     {
         $userRole = Auth::user()->role;
@@ -68,11 +178,7 @@ class CounterController extends Controller
             abort(403, 'Unauthorized access to this counter.');
         }
         
-        $queue = QueueTicket::where('service_type', $counter->type)
-            ->where('status', 'pending')
-            ->orderByRaw("FIELD(priority, 'pwd_senior_pregnant','student','parent')")
-            ->orderBy('created_at')
-            ->get();
+        $queue = $this->getPendingQueueAlternating($counter->type);
 
         $onHold = QueueTicket::where('service_type', $counter->type)
             ->where(function ($query) {
@@ -124,12 +230,8 @@ class CounterController extends Controller
                 $currentTicket->save();
             }
 
-            // Get next pending ticket
-            $nextTicket = QueueTicket::where('service_type', $counter->type)
-                ->where('status', 'pending')
-                ->orderByRaw("FIELD(priority, 'pwd_senior_pregnant','student','parent')")
-                ->orderBy('created_at')
-                ->first();
+            // Get next pending ticket using alternating student/priority strategy
+            $nextTicket = $this->getNextPendingTicketAlternating($counter->type);
 
             if ($nextTicket) {
                 // Ensure same ticket not served by another counter
@@ -200,12 +302,8 @@ class CounterController extends Controller
             $ticket->save();
             event(new TicketUpdated('on_hold', $ticket));
 
-            // Automatically esrve the next pending ticket
-            $nextTicket = QueueTicket::where('service_type', $counter->type)
-                ->where('status', 'pending')
-                ->orderByRaw("FIELD(priority, 'pwd_senior_pregnant','student','parent')")
-                ->orderBy('created_at')
-                ->first();
+            // Automatically serve the next pending ticket using alternating strategy
+            $nextTicket = $this->getNextPendingTicketAlternating($counter->type);
 
             if ($nextTicket) {
                 $nextTicket->status = 'serving';

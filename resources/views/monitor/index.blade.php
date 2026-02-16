@@ -66,6 +66,10 @@
             color: #9e9e9e;
         }
 
+        .ticket-box.unavailable .ticket-code {
+            border-left-color: #bdbdbd;
+        }
+
         /* Blink highlight for latest updated code text */
         @keyframes codeBlink {
             0%, 100% {
@@ -91,14 +95,18 @@
             font-size: 3.5rem;
             font-weight: 900;
             text-align: center;
-            color: #d81b60;
+            color: #000000;
         }
 
         .ticket-code {
             flex: 1;
-            font-size: 2rem;
+            font-size: 3.2rem;
             font-weight: 700;
-            padding-left: 1rem;
+            padding-left: 1.5rem;
+            padding-top: 0.35rem;
+            padding-bottom: 0.35rem;
+            margin-left: 0.75rem;
+            border-left: 6px solid #d81b60;
             color: #8c0f45;
         }
 

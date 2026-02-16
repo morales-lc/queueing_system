@@ -123,7 +123,7 @@
 
         /* TEXT */
         .instruction-text {
-            font-size: clamp(12px, 1.2vw, 14px);
+            font-size: clamp(20px, 1.6vw, 20px);
             font-weight: bold;
             text-align: center;
             color: #c2185b;
@@ -139,7 +139,7 @@
 
         ul li {
             margin-bottom: 4px;
-            font-size: larger;
+            font-size: 30px;
         }
 
         .divider {
@@ -227,7 +227,7 @@
                 <div class="divider"></div>
 
                 <!-- SECOND BULLETS -->
-                <p>Request of Documents such as:</p>
+                <p style="font-size: 30px">Request of Documents such as:</p>
                 <ul>
 
                     <li>Transcript of Records</li>

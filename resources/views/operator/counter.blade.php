@@ -184,7 +184,7 @@
             <a href="{{ route('media.index') }}" class="btn btn-light fw-bold">Manage TV Content</a>
             <form method="post" action="{{ route('logout') }}">
                 @csrf
-                <button class="btn btn-light fw-bold">Logout</button>
+                <button class="btn btn-danger fw-bold">Logout</button>
             </form>
         </div>
     </div>
