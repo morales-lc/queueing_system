@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Counter;
 use App\Models\QueueTicket;
+use App\Models\MonitorMedia;
+use App\Models\MonitorSetting;
 
 class MonitorController extends Controller
 {
@@ -30,6 +32,32 @@ class MonitorController extends Controller
                 ->first();
         }
 
-        return view('monitor.index', compact('cashierCounters', 'registrarCounters', 'nowServing'));
+        // Get active media ordered by order column
+        $mediaItems = MonitorMedia::where('is_active', true)
+            ->orderBy('order')
+            ->get();
+
+        $settings = MonitorSetting::first();
+        $marqueeText = $settings->marquee_text ?? 'Welcome to Our Service Center! Please wait for your number to be called. Thank you for your patience and cooperation.';
+
+        return view('monitor.index', compact('cashierCounters', 'registrarCounters', 'nowServing', 'mediaItems', 'marqueeText'));
+    }
+
+    public function marquee()
+    {
+        $settings = MonitorSetting::first();
+        $marqueeText = $settings->marquee_text ?? 'Welcome to Our Service Center! Please wait for your number to be called. Thank you for your patience and cooperation.';
+
+        return response()->json([
+            'marqueeText' => $marqueeText,
+        ]);
+    }
+
+    public function mediaFragment()
+    {
+        $mediaItems = MonitorMedia::where('is_active', true)
+            ->orderBy('order')
+            ->get();
+        return view('monitor._media', compact('mediaItems'));
     }
 }

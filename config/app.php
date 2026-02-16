@@ -65,7 +65,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Asia/Manila',
 
     /*
     |--------------------------------------------------------------------------
@@ -130,5 +130,8 @@ return [
     */
 
     'printer_enabled' => env('PRINTER_ENABLED', false),
+    'printer_type' => env('PRINTER_TYPE', 'windows'),
+    'printer_target' => env('PRINTER_TARGET', 'EPSON TM-T82II Receipt'),
+    'printer_port' => env('PRINTER_PORT', 9100),
 
 ];
