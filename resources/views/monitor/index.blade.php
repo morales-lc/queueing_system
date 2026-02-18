@@ -203,7 +203,7 @@
                     <div class="media-content" id="mediaPanel">
                         @include('monitor._media')
                     </div>
-                    <marquee class="custom-marquee" direction="left" loop="20">
+                    <marquee class="custom-marquee" direction="left" loop="-1">
                         {{ $marqueeText }}
                     </marquee>
                 </div>
