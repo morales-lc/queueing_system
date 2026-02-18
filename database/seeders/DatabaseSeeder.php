@@ -54,6 +54,8 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        $this->call(AdminUserSeeder::class);
+
         // Default monitor marquee text
         MonitorSetting::firstOrCreate(
             ['id' => 1],

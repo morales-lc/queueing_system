@@ -118,17 +118,22 @@
 </head>
 <body>
 
+@php
+    $isAdmin = auth()->check() && auth()->user()->role === 'admin';
+    $mediaRoutePrefix = $isAdmin ? 'admin.media.' : 'media.';
+@endphp
+
 <!-- TOP HEADER -->
 <div class="header-bar">
     <div class="left-section">
         <div class="circle"></div>
         <h5 class="fw-bold">Manage Monitor</h5>
     </div>
-    <a href="{{ auth()->user()->counter_id ? route('counter.show', auth()->user()->counter_id) : route('counter.index') }}" class="btn">
+    <a href="{{ $isAdmin ? route('admin.sessions.index') : (auth()->user()->counter_id ? route('counter.show', auth()->user()->counter_id) : route('counter.index')) }}" class="btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16" style="margin-right: 5px;">
             <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
         </svg>
-        Back to Counter
+        {{ $isAdmin ? 'Back to Admin' : 'Back to Counter' }}
     </a>
 </div>
 
@@ -144,7 +149,7 @@
     <div class="upload-box mb-4">
         <h4 class="mb-3" style="color: #c2185b;">TV Marquee Text</h4>
         <p class="text-muted">This text appears in the scrolling marquee at the bottom of the TV monitor.</p>
-        <form method="POST" action="{{ route('media.updateMarquee') }}">
+        <form method="POST" action="{{ route($mediaRoutePrefix . 'updateMarquee') }}">
             @csrf
             <div class="mb-3">
                 <textarea name="marquee_text" class="form-control" rows="3" required>{{ old('marquee_text', optional($settings)->marquee_text ?? 'Welcome to Our Service Center! Please wait for your number to be called. Thank you for your patience and cooperation.') }}</textarea>
@@ -168,7 +173,7 @@
     <div class="upload-box">
         <h4 class="mb-3" style="color: #c2185b;">Upload New Media</h4>
         <p class="text-muted">Supported formats: JPG, PNG, GIF, MP4, AVI, MOV, WEBM (Max: 100MB)</p>
-        <form method="POST" action="{{ route('media.store') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route($mediaRoutePrefix . 'store') }}" enctype="multipart/form-data">
             @csrf
             <div class="mb-3">
                 <input type="file" class="form-control" name="file" accept=".jpg,.jpeg,.png,.gif,.mp4,.avi,.mov,.webm" required>
@@ -215,14 +220,14 @@
                         <input type="hidden" value="{{ $item->order }}" class="order-input">
                     </div>
                     <div class="col-auto">
-                        <form method="POST" action="{{ route('media.toggleActive', $item->id) }}" style="display: inline;">
+                        <form method="POST" action="{{ route($mediaRoutePrefix . 'toggleActive', $item->id) }}" style="display: inline;">
                             @csrf
                             @method('PATCH')
                             <button type="submit" class="btn btn-sm btn-outline-primary">
                                 {{ $item->is_active ? 'Disable' : 'Enable' }}
                             </button>
                         </form>
-                        <form method="POST" action="{{ route('media.destroy', $item->id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this media?');">
+                        <form method="POST" action="{{ route($mediaRoutePrefix . 'destroy', $item->id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this media?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
@@ -238,7 +243,7 @@
     </div>
 
     @if($media->count() > 0)
-    <form method="POST" action="{{ route('media.updateOrder') }}" id="orderForm">
+    <form method="POST" action="{{ route($mediaRoutePrefix . 'updateOrder') }}" id="orderForm">
         @csrf
         <input type="hidden" name="orders_json" id="ordersJson">
         <div class="text-center mt-4">

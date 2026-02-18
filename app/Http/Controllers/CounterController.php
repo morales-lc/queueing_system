@@ -11,9 +11,14 @@ use Illuminate\Support\Facades\Auth;
 
 class CounterController extends Controller
 {
+    protected function todayTickets()
+    {
+        return QueueTicket::whereDate('created_at', today());
+    }
+
     protected function getLastCalledTicket(string $serviceType): ?QueueTicket
     {
-        return QueueTicket::where('service_type', $serviceType)
+        return $this->todayTickets()->where('service_type', $serviceType)
             ->whereIn('status', ['serving', 'done', 'on_hold'])
             ->where('called_times', '>', 0)
             ->latest('updated_at')
@@ -41,13 +46,13 @@ class CounterController extends Controller
 
     protected function getNextPendingTicketAlternating(string $serviceType): ?QueueTicket
     {
-        $nextStudent = QueueTicket::where('service_type', $serviceType)
+        $nextStudent = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', 'student')
             ->orderBy('created_at')
             ->first();
 
-        $nextPriority = QueueTicket::where('service_type', $serviceType)
+        $nextPriority = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', '!=', 'student')
             ->orderBy('created_at')
@@ -72,13 +77,13 @@ class CounterController extends Controller
 
     protected function getPendingQueueAlternating(string $serviceType)
     {
-        $studentQueue = QueueTicket::where('service_type', $serviceType)
+        $studentQueue = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', 'student')
             ->orderBy('created_at')
             ->get();
 
-        $priorityQueue = QueueTicket::where('service_type', $serviceType)
+        $priorityQueue = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', '!=', 'student')
             ->orderBy('created_at')
@@ -180,7 +185,7 @@ class CounterController extends Controller
         
         $queue = $this->getPendingQueueAlternating($counter->type);
 
-        $onHold = QueueTicket::where('service_type', $counter->type)
+        $onHold = $this->todayTickets()->where('service_type', $counter->type)
             ->where(function ($query) {
                 $query->where('status', 'on_hold')
                     ->orWhere(function ($q) {
@@ -192,7 +197,7 @@ class CounterController extends Controller
             ->orderBy('updated_at', 'asc')
             ->get();
 
-        $nowServing = QueueTicket::where('counter_id', $counter->id)
+        $nowServing = $this->todayTickets()->where('counter_id', $counter->id)
             ->where('status', 'serving')
             ->latest()
             ->first();
@@ -264,7 +269,7 @@ class CounterController extends Controller
         
         $removed = false;
         if ($nextPressCount % 3 === 0) {
-            $oldestHold = QueueTicket::where('service_type', $counter->type)
+            $oldestHold = $this->todayTickets()->where('service_type', $counter->type)
                 ->where('status', 'on_hold')
                 ->orderBy('updated_at', 'asc')
                 ->first();
@@ -294,7 +299,7 @@ class CounterController extends Controller
         //update last action time
         session(['last_hold_time_' . $counter->id => $now]);
         
-        if ($ticket->status === 'serving' && $ticket->counter_id === $counter->id) {
+        if ($ticket->status === 'serving' && $ticket->counter_id === $counter->id && $ticket->created_at->isToday()) {
             //Mark current ticket as on_hold
             $ticket->status = 'on_hold';
             $ticket->hold_count = ($ticket->hold_count ?? 0) + 1;
@@ -318,7 +323,7 @@ class CounterController extends Controller
 
     public function callAgain(Counter $counter, QueueTicket $ticket)
     {
-        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type) {
+        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type && $ticket->created_at->isToday()) {
             // Use transaction to handle both the current serving ticket and the called ticket
             DB::transaction(function () use ($counter, $ticket) {
                 // First, handle any currently serving ticket at this counter
@@ -348,7 +353,7 @@ class CounterController extends Controller
 
     public function removeHold(Counter $counter, QueueTicket $ticket)
     {
-        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type) {
+        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type && $ticket->created_at->isToday()) {
             $ticket->status = 'done';
             $ticket->save();
             event(new TicketUpdated('done', $ticket));
