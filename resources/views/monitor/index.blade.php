@@ -119,19 +119,33 @@
             background: #ffe6f3;
             background-size: cover;
             box-shadow: 0 4px 12px rgba(255, 120, 170, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Media content container - constrained to leave room for marquee */
+        .media-content {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            overflow: hidden;
         }
 
         /* Modern marquee */
         .custom-marquee {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: 900;
             padding: 10px 0;
-            height: 50px;
+            height: 80px;
             color: #fff;
             background: linear-gradient(90deg, #ff4fa0, #ff82c4);
-            border-radius: 12px;
+            border-radius: 0 0 17px 17px;
             letter-spacing: 1.5px;
-            box-shadow: 0 4px 10px rgba(255, 60, 140, 0.35);
+            box-shadow: 0 -2px 8px rgba(255, 60, 140, 0.25);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
         }
 
         /* Top row uses only needed height */
@@ -143,15 +157,6 @@
         .bottom-row {
             flex: 1;
             display: flex;
-        }
-
-        /* Marquee stretches to fill the whole bottom */
-        .bottom-row marquee {
-            flex: 1;
-            height: 70% !important;
-            display: flex;
-            align-items: center;
-            /* vertically center text */
         }
     </style>
 
@@ -194,16 +199,15 @@
             </div>
 
             <div class="col-6">
-                <div class="big-screen" id="mediaPanel">
-                    @include('monitor._media')
+                <div class="big-screen">
+                    <div class="media-content" id="mediaPanel">
+                        @include('monitor._media')
+                    </div>
+                    <marquee class="custom-marquee" direction="left" loop="-1">
+                        {{ $marqueeText }}
+                    </marquee>
                 </div>
             </div>
-        </div>
-
-        <div class="row bottom-row">
-            <marquee class="custom-marquee mt-3" direction="left" loop="20">
-                {{ $marqueeText }}
-            </marquee>
         </div>
 
     </div>
@@ -342,7 +346,7 @@
                     const marqueeResp = await fetch('{{ route('monitor.marquee') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                     if (marqueeResp.ok) {
                         const data = await marqueeResp.json();
-                        const marqueeEl = document.querySelector('.custom-marquee');
+                        const marqueeEl = document.querySelector('.big-screen .custom-marquee');
                         if (marqueeEl && data.marqueeText) {
                             marqueeEl.textContent = data.marqueeText;
                         }
@@ -353,7 +357,7 @@
 
         // Media slideshow functionality
         function initSlideshow() {
-            const slides = Array.from(document.querySelectorAll('#mediaPanel .media-slide'));
+            const slides = Array.from(document.querySelectorAll('.media-content .media-slide'));
             if (slides.length === 0) return;
             let current = slides.findIndex(s => s.classList.contains('active'));
             if (current < 0) current = 0;

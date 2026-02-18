@@ -15,6 +15,11 @@ class AuthController extends Controller
     {
         if (Auth::check()) {
             $user = Auth::user();
+
+            if ($user->role === 'admin') {
+                return redirect()->route('admin.sessions.index');
+            }
+
             if ($user->counter_id) {
                 return redirect()->route('counter.show', $user->counter_id);
             }
@@ -49,6 +54,10 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
+
+            if ($user->role === 'admin') {
+                return redirect()->route('admin.sessions.index');
+            }
 
             // Claim the counter automatically
             if ($user->counter_id) {

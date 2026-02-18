@@ -6,14 +6,30 @@ use App\Models\Counter;
 use App\Models\QueueTicket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Events\TicketUpdated;
 use Illuminate\Support\Facades\Auth;
 
 class CounterController extends Controller
 {
+    protected function withServiceLock(string $serviceType, callable $callback)
+    {
+        try {
+            return Cache::lock('queue_turn_lock_' . $serviceType, 10)
+                ->block(5, fn() => $callback());
+        } catch (\Throwable $e) {
+            return $callback();
+        }
+    }
+
+    protected function todayTickets()
+    {
+        return QueueTicket::whereDate('created_at', today());
+    }
+
     protected function getLastCalledTicket(string $serviceType): ?QueueTicket
     {
-        return QueueTicket::where('service_type', $serviceType)
+        return $this->todayTickets()->where('service_type', $serviceType)
             ->whereIn('status', ['serving', 'done', 'on_hold'])
             ->where('called_times', '>', 0)
             ->latest('updated_at')
@@ -41,13 +57,13 @@ class CounterController extends Controller
 
     protected function getNextPendingTicketAlternating(string $serviceType): ?QueueTicket
     {
-        $nextStudent = QueueTicket::where('service_type', $serviceType)
+        $nextStudent = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', 'student')
             ->orderBy('created_at')
             ->first();
 
-        $nextPriority = QueueTicket::where('service_type', $serviceType)
+        $nextPriority = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', '!=', 'student')
             ->orderBy('created_at')
@@ -72,13 +88,13 @@ class CounterController extends Controller
 
     protected function getPendingQueueAlternating(string $serviceType)
     {
-        $studentQueue = QueueTicket::where('service_type', $serviceType)
+        $studentQueue = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', 'student')
             ->orderBy('created_at')
             ->get();
 
-        $priorityQueue = QueueTicket::where('service_type', $serviceType)
+        $priorityQueue = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', '!=', 'student')
             ->orderBy('created_at')
@@ -95,7 +111,7 @@ class CounterController extends Controller
         if ($priorityQueue->isEmpty()) {
             return $studentQueue;
         }
-
+        
         $startBucket = $this->getAlternatingStartBucket($serviceType, $studentQueue->first(), $priorityQueue->first());
         $result = collect();
         $turn = $startBucket;
@@ -180,7 +196,7 @@ class CounterController extends Controller
         
         $queue = $this->getPendingQueueAlternating($counter->type);
 
-        $onHold = QueueTicket::where('service_type', $counter->type)
+        $onHold = $this->todayTickets()->where('service_type', $counter->type)
             ->where(function ($query) {
                 $query->where('status', 'on_hold')
                     ->orWhere(function ($q) {
@@ -192,7 +208,7 @@ class CounterController extends Controller
             ->orderBy('updated_at', 'asc')
             ->get();
 
-        $nowServing = QueueTicket::where('counter_id', $counter->id)
+        $nowServing = $this->todayTickets()->where('counter_id', $counter->id)
             ->where('status', 'serving')
             ->latest()
             ->first();
@@ -217,33 +233,35 @@ class CounterController extends Controller
         
         $currentTicket = null;
         
-        // Use transaction to ensure both updates complete before broadcasting
-        DB::transaction(function () use ($counter, &$nextTicket, &$currentTicket) {
-            // Mark currently serving ticket as done (transaction completed)
-            $currentTicket = QueueTicket::where('counter_id', $counter->id)
-                ->where('status', 'serving')
-                ->first();
+        // Serialize selection/assignment per service to keep global alternation consistent
+        $this->withServiceLock($counter->type, function () use ($counter, &$nextTicket, &$currentTicket) {
+            DB::transaction(function () use ($counter, &$nextTicket, &$currentTicket) {
+                // Mark currently serving ticket as done 
+                $currentTicket = QueueTicket::where('counter_id', $counter->id)
+                    ->where('status', 'serving')
+                    ->first();
 
-            if ($currentTicket) {
-                $currentTicket->status = 'done';
-                $currentTicket->counter_id = null;
-                $currentTicket->save();
-            }
-
-            // Get next pending ticket using alternating student/priority strategy
-            $nextTicket = $this->getNextPendingTicketAlternating($counter->type);
-
-            if ($nextTicket) {
-                // Ensure same ticket not served by another counter
-                if ($nextTicket->status === 'serving' && $nextTicket->counter_id !== $counter->id) {
-                    throw new \Exception('Ticket already serving in another counter.');
+                if ($currentTicket) {
+                    $currentTicket->status = 'done';
+                    $currentTicket->counter_id = null;
+                    $currentTicket->save();
                 }
 
-                $nextTicket->status = 'serving';
-                $nextTicket->counter_id = $counter->id;
-                $nextTicket->called_times = ($nextTicket->called_times ?? 0) + 1;
-                $nextTicket->save();
-            }
+                // Get next pending ticket using alternating student/priority strategy
+                $nextTicket = $this->getNextPendingTicketAlternating($counter->type);
+
+                if ($nextTicket) {
+                    // Ensure same ticket not served by another counter
+                    if ($nextTicket->status === 'serving' && $nextTicket->counter_id !== $counter->id) {
+                        throw new \Exception('Ticket already serving in another counter.');
+                    }
+
+                    $nextTicket->status = 'serving';
+                    $nextTicket->counter_id = $counter->id;
+                    $nextTicket->called_times = ($nextTicket->called_times ?? 0) + 1;
+                    $nextTicket->save();
+                }
+            });
         });
 
         // Broadcast events after transaction completes
@@ -264,7 +282,7 @@ class CounterController extends Controller
         
         $removed = false;
         if ($nextPressCount % 3 === 0) {
-            $oldestHold = QueueTicket::where('service_type', $counter->type)
+            $oldestHold = $this->todayTickets()->where('service_type', $counter->type)
                 ->where('status', 'on_hold')
                 ->orderBy('updated_at', 'asc')
                 ->first();
@@ -281,7 +299,7 @@ class CounterController extends Controller
 
     public function hold(Counter $counter, QueueTicket $ticket)
     {
-        // Server-side rate limiting: prevent rapid clicks (10 second cooldown)
+        // Server-side prevent rapid clicks (10 second cooldown)
         $lastHoldTime = session('last_hold_time_' . $counter->id);
         $now = now()->timestamp;
         
@@ -294,23 +312,35 @@ class CounterController extends Controller
         //update last action time
         session(['last_hold_time_' . $counter->id => $now]);
         
-        if ($ticket->status === 'serving' && $ticket->counter_id === $counter->id) {
-            //Mark current ticket as on_hold
-            $ticket->status = 'on_hold';
-            $ticket->hold_count = ($ticket->hold_count ?? 0) + 1;
-            $ticket->counter_id = null; // Release from this counter
-            $ticket->save();
+        if ($ticket->status === 'serving' && $ticket->counter_id === $counter->id && $ticket->created_at->isToday()) {
+            $servedAfterHold = null;
+
+            // Serialize selection/assignment per service 
+            $this->withServiceLock($counter->type, function () use ($counter, $ticket, &$servedAfterHold) {
+                DB::transaction(function () use ($counter, $ticket, &$servedAfterHold) {
+                    // Mark current ticket as on-hold
+                    $ticket->status = 'on_hold';
+                    $ticket->hold_count = ($ticket->hold_count ?? 0) + 1;
+                    $ticket->counter_id = null; // Release from this counter
+                    $ticket->save();
+
+                    //automatically serve the next pending ticket using alternating strategy
+                    $nextTicket = $this->getNextPendingTicketAlternating($counter->type);
+
+                    if ($nextTicket) {
+                        $nextTicket->status = 'serving';
+                        $nextTicket->counter_id = $counter->id;
+                        $nextTicket->called_times = ($nextTicket->called_times ?? 0) + 1;
+                        $nextTicket->save();
+                        $servedAfterHold = $nextTicket;
+                    }
+                });
+            });
+
             event(new TicketUpdated('on_hold', $ticket));
 
-            // Automatically serve the next pending ticket using alternating strategy
-            $nextTicket = $this->getNextPendingTicketAlternating($counter->type);
-
-            if ($nextTicket) {
-                $nextTicket->status = 'serving';
-                $nextTicket->counter_id = $counter->id;
-                $nextTicket->called_times = ($nextTicket->called_times ?? 0) + 1;
-                $nextTicket->save();
-                event(new TicketUpdated('serving', $nextTicket));
+            if ($servedAfterHold) {
+                event(new TicketUpdated('serving', $servedAfterHold));
             }
         }
         return redirect()->route('counter.show', $counter);
@@ -318,23 +348,23 @@ class CounterController extends Controller
 
     public function callAgain(Counter $counter, QueueTicket $ticket)
     {
-        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type) {
-            // Use transaction to handle both the current serving ticket and the called ticket
+        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type && $ticket->created_at->isToday()) {
+            //use transaction mysql function to handle both the current serving ticket and the called ticket
             DB::transaction(function () use ($counter, $ticket) {
-                // First, handle any currently serving ticket at this counter
+                // una kay, handle any currently serving ticket at this counter
                 $currentlyServing = QueueTicket::where('counter_id', $counter->id)
                     ->where('status', 'serving')
                     ->where('id', '!=', $ticket->id)
                     ->first();
                 
                 if ($currentlyServing) {
-                    // Put the currently serving ticket back to pending
+                    //put the currently serving ticket back to pending
                     $currentlyServing->status = 'pending';
                     $currentlyServing->counter_id = null;
                     $currentlyServing->save();
                 }
                 
-                // Now serve the called ticket
+                //now serve the called ticket
                 $ticket->status = 'serving';
                 $ticket->counter_id = $counter->id;
                 $ticket->called_times = ($ticket->called_times ?? 0) + 1;
@@ -348,7 +378,7 @@ class CounterController extends Controller
 
     public function removeHold(Counter $counter, QueueTicket $ticket)
     {
-        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type) {
+        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type && $ticket->created_at->isToday()) {
             $ticket->status = 'done';
             $ticket->save();
             event(new TicketUpdated('done', $ticket));

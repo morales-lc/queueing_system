@@ -7,6 +7,7 @@ use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\CounterController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\Admin\SessionController as AdminSessionController;
 
 // Landing redirect to kiosk
 Route::get('/', [KioskController::class, 'index'])->name('home');
@@ -55,6 +56,19 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/counter/{counter}/hold/{ticket}', [CounterController::class, 'removeHold'])->name('counter.removeHold');
     
     // Media management routes
+    Route::get('/media', [MediaController::class, 'index'])->name('media.index');
+    Route::post('/media', [MediaController::class, 'store'])->name('media.store');
+    Route::post('/media/marquee', [MediaController::class, 'updateMarquee'])->name('media.updateMarquee');
+    Route::delete('/media/{id}', [MediaController::class, 'destroy'])->name('media.destroy');
+    Route::patch('/media/{id}/toggle', [MediaController::class, 'toggleActive'])->name('media.toggleActive');
+    Route::post('/media/order', [MediaController::class, 'updateOrder'])->name('media.updateOrder');
+});
+
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/sessions', [AdminSessionController::class, 'index'])->name('sessions.index');
+    Route::delete('/sessions/{sessionId}', [AdminSessionController::class, 'destroy'])->name('sessions.destroy');
+    Route::delete('/users/{user}/sessions', [AdminSessionController::class, 'destroyUserSessions'])->name('sessions.destroyUserSessions');
+
     Route::get('/media', [MediaController::class, 'index'])->name('media.index');
     Route::post('/media', [MediaController::class, 'store'])->name('media.store');
     Route::post('/media/marquee', [MediaController::class, 'updateMarquee'])->name('media.updateMarquee');
