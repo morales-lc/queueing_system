@@ -20,6 +20,7 @@ Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->nam
 // Kiosk flow
 Route::get('/kiosk', [KioskController::class, 'index'])->name('kiosk.index');
 Route::post('/kiosk/service', [KioskController::class, 'chooseService'])->name('kiosk.service');
+Route::get('/kiosk/registrar/programs', [KioskController::class, 'showRegistrarPrograms'])->name('kiosk.registrarPrograms');
 // Gracefully handle accidental GETs to POST-only routes
 Route::get('/kiosk/service', function () {
 	return redirect()->route('kiosk.index');

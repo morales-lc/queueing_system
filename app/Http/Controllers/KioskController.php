@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Counter;
 use App\Models\QueueTicket;
 use App\Events\TicketUpdated;
 use Illuminate\Http\Request;
@@ -12,6 +13,48 @@ use Mike42\Escpos\EscposImage;
 
 class KioskController extends Controller
 {
+
+    // registrar programs and their assigned counter numbers, MODIFY THE NUMBERS HERE TO CHANGE COUNTER ASSIGNMENTS FOR EACH PROGRAM.
+    // modify "registrar_number" 1 = Counter 1, 2 = Counter 2, etc. 
+    protected const REGISTRAR_PROGRAMS = [
+        'senior_high_school' => [
+            'label' => 'Senior High School',
+            'registrar_number' => 1,
+        ],
+        'aisacct_it' => [
+            'label' => 'AISACCT-IT',
+            'registrar_number' => 2,
+        ],
+        'allied_health' => [
+            'label' => 'Allied Health',
+            'registrar_number' => 3,
+        ],
+        'arts_science' => [
+            'label' => 'Arts & Science',
+            'registrar_number' => 3,
+        ],
+        'business_education' => [
+            'label' => 'Business Education',
+            'registrar_number' => 2,
+        ],
+        'hotel_management' => [
+            'label' => 'Hospitality Management',
+            'registrar_number' => 2,
+        ],
+        'social_work' => [
+            'label' => 'Social Work',
+            'registrar_number' => 3,
+        ],
+        'teacher_education' => [
+            'label' => 'Teacher Education',
+            'registrar_number' => 3,
+        ],
+        'graduate_school' => [
+            'label' => 'Graduate School',
+            'registrar_number' => 4,
+        ],
+    ];
+
     public function index()
     {
         return view('kiosk.index');
@@ -23,25 +66,85 @@ class KioskController extends Controller
             'service_type' => 'required|in:cashier,registrar',
         ]);
 
+        if ($validated['service_type'] === 'registrar') {
+            return redirect()->route('kiosk.registrarPrograms');
+        }
+
         return view('kiosk.priority', ['service' => $validated['service_type']]);
+    }
+
+    public function showRegistrarPrograms()
+    {
+        return view('kiosk.registrar-program', [
+            'columnOnePrograms' => [
+                'senior_high_school',
+                'aisacct_it',
+                'allied_health',
+                'arts_science',
+                'business_education',
+            ],
+            'columnTwoPrograms' => [
+                'hotel_management',
+                'social_work',
+                'teacher_education',
+                'graduate_school',
+            ],
+            'programs' => self::REGISTRAR_PROGRAMS,
+        ]);
     }
 
     public function choosePriority(Request $request)
     {
         $validated = $request->validate([
             'service' => 'required|in:cashier,registrar',
-            'priority' => 'required|in:pwd_senior_pregnant,student,parent',
+            'program' => 'nullable|string|in:' . implode(',', array_keys(self::REGISTRAR_PROGRAMS)),
         ]);
 
-        return view('kiosk.confirm', $validated);
+        if ($validated['service'] === 'registrar' && empty($validated['program'])) {
+            return redirect()->route('kiosk.registrarPrograms')->withErrors([
+                'program' => 'Please select a registrar program first.',
+            ]);
+        }
+
+        return view('kiosk.priority', $validated);
     }
 
     public function issueTicket(Request $request)
     {
         $validated = $request->validate([
             'service' => 'required|in:cashier,registrar',
+            'program' => 'nullable|string|in:' . implode(',', array_keys(self::REGISTRAR_PROGRAMS)),
             'priority' => 'required|in:pwd_senior_pregnant,student,parent',
         ]);
+
+        $programKey = null;
+        $designatedCounterId = null;
+
+        if ($validated['service'] === 'registrar') {
+            $programKey = $validated['program'] ?? null;
+
+            if (!$programKey) {
+                return redirect()->route('kiosk.registrarPrograms')->withErrors([
+                    'program' => 'Please select a registrar program first.',
+                ]);
+            }
+
+            $programConfig = self::REGISTRAR_PROGRAMS[$programKey] ?? null;
+
+            if (!$programConfig) {
+                return redirect()->route('kiosk.registrarPrograms')->withErrors([
+                    'program' => 'Invalid registrar program selected.',
+                ]);
+            }
+
+            $designatedCounterId = $this->getRegistrarCounterIdByNumber((int) $programConfig['registrar_number']);
+
+            if (!$designatedCounterId) {
+                return redirect()->route('kiosk.registrarPrograms')->withErrors([
+                    'program' => 'Assigned registrar counter is not available. Please ask staff for assistance.',
+                ]);
+            }
+        }
 
         // If printing is enabled, ensure printer is online / ready before generating a code
         if (config('app.printer_enabled', false)) {
@@ -96,7 +199,9 @@ class KioskController extends Controller
         $ticket = QueueTicket::create([
             'code' => $code,
             'service_type' => $validated['service'],
+            'program' => $programKey,
             'priority' => $validated['priority'],
+            'designated_counter_id' => $designatedCounterId,
         ]);
 
         event(new TicketUpdated('created', $ticket));
@@ -106,6 +211,26 @@ class KioskController extends Controller
         }
 
         return redirect()->route('kiosk.ticket', $ticket);
+    }
+
+    protected function getRegistrarCounterIdByNumber(int $registrarNumber): ?int
+    {
+        if ($registrarNumber < 1) {
+            return null;
+        }
+
+        $counterId = Counter::where('type', 'registrar')
+            ->where('name', (string) $registrarNumber)
+            ->value('id');
+
+        if ($counterId) {
+            return (int) $counterId;
+        }
+
+        return Counter::where('type', 'registrar')
+            ->orderBy('id')
+            ->skip($registrarNumber - 1)
+            ->value('id');
     }
 
     public function showTicket(QueueTicket $ticket)

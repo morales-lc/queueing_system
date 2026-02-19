@@ -298,7 +298,7 @@
         <div class="circle"></div>
         <h5 class="m-0 fw-bold">LOURDES COLLEGE, INC.</h5>
         <div class="ms-auto">
-            <a href="{{ route('kiosk.index') }}" class="btn btn-light fw-bold" style="border:2px solid #ffbad6;">
+            <a href="{{ ($service ?? null) === 'registrar' ? route('kiosk.registrarPrograms') : route('kiosk.index') }}" class="btn btn-light fw-bold" style="border:2px solid #ffbad6;">
                 ← Back
             </a>
         </div>
@@ -370,7 +370,7 @@
         <div style="height:50px"></div>
 
         <div class="d-flex justify-content-end mt-4">
-            <a href="{{ route('kiosk.index') }}" class="btn btn-light fw-bold" style="border:2px solid #ffbad6;">
+            <a href="{{ ($service ?? null) === 'registrar' ? route('kiosk.registrarPrograms') : route('kiosk.index') }}" class="btn btn-light fw-bold" style="border:2px solid #ffbad6;">
                 ← Back
             </a>
         </div>
@@ -392,6 +392,7 @@
                     <form method="POST" action="{{ route('kiosk.issue') }}" id="confirmForm">
                         @csrf
                         <input type="hidden" name="service" id="hiddenService">
+                        <input type="hidden" name="program" id="hiddenProgram">
                         <input type="hidden" name="priority" id="hiddenPriority">
                         <button type="submit" class="btn confirm-btn">Generate Code</button>
                         <button type="button" class="btn cancel-btn" data-bs-dismiss="modal">Cancel</button>
@@ -403,6 +404,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const selectedProgram = @json($program ?? null);
+
         function showConfirmModal(service, priority, priorityLabel) {
             // Set modal content
             document.getElementById('modalService').textContent = service.charAt(0).toUpperCase() + service.slice(1);
@@ -410,6 +413,7 @@
 
             // Set hidden form fields
             document.getElementById('hiddenService').value = service;
+            document.getElementById('hiddenProgram').value = selectedProgram || '';
             document.getElementById('hiddenPriority').value = priority;
 
             // Show modal
