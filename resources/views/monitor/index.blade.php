@@ -215,8 +215,34 @@
 
 
     <script>
+        let ziraVoice = null;
+        
+        //load voices when they become available
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            ziraVoice = voices.find(voice => 
+                voice.name.includes('Zira') || (voice.name.includes('Microsoft') && voice.name.includes('Zira'))
+            );
+            if (!ziraVoice) {
+                //if cant find try to find any English US female voice
+                ziraVoice = voices.find(voice => voice.lang.startsWith('en-US'));
+            }
+        }
+        
+        //load the voices on page load and when they change
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+        
         function speak(text) {
             const u = new SpeechSynthesisUtterance(text);
+            u.rate = 1;
+            u.pitch = 1;
+            u.volume = 1;
+            
+            if (ziraVoice) {
+                u.voice = ziraVoice;
+            }
+            
             window.speechSynthesis.speak(u);
         }
 
