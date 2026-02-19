@@ -27,16 +27,35 @@ class CounterController extends Controller
         return QueueTicket::whereDate('created_at', today());
     }
 
-    protected function getLastCalledTicket(string $serviceType): ?QueueTicket
+    protected function scopeTicketsForCounter($query, Counter $counter)
     {
-        return $this->todayTickets()->where('service_type', $serviceType)
-            ->whereIn('status', ['serving', 'done', 'on_hold'])
-            ->where('called_times', '>', 0)
-            ->latest('updated_at')
-            ->first();
+        if ($counter->type === 'registrar') {
+            $query->where('designated_counter_id', $counter->id);
+        }
+
+        return $query;
     }
 
-    protected function getAlternatingStartBucket(string $serviceType, ?QueueTicket $nextStudent, ?QueueTicket $nextPriority): string
+    protected function isTicketAllowedForCounter(Counter $counter, QueueTicket $ticket): bool
+    {
+        if ($counter->type !== 'registrar') {
+            return true;
+        }
+
+        return (int) $ticket->designated_counter_id === (int) $counter->id;
+    }
+
+    protected function getLastCalledTicket(string $serviceType, Counter $counter): ?QueueTicket
+    {
+        $query = $this->todayTickets()->where('service_type', $serviceType)
+            ->whereIn('status', ['serving', 'done', 'on_hold'])
+            ->where('called_times', '>', 0)
+            ->latest('updated_at');
+
+        return $this->scopeTicketsForCounter($query, $counter)->first();
+    }
+
+    protected function getAlternatingStartBucket(string $serviceType, Counter $counter, ?QueueTicket $nextStudent, ?QueueTicket $nextPriority): string
     {
         if (!$nextStudent) {
             return 'priority';
@@ -46,7 +65,7 @@ class CounterController extends Controller
             return 'student';
         }
 
-        $lastCalled = $this->getLastCalledTicket($serviceType);
+        $lastCalled = $this->getLastCalledTicket($serviceType, $counter);
 
         if (!$lastCalled) {
             return $nextStudent->created_at->lte($nextPriority->created_at) ? 'student' : 'priority';
@@ -55,19 +74,23 @@ class CounterController extends Controller
         return $lastCalled->priority === 'student' ? 'priority' : 'student';
     }
 
-    protected function getNextPendingTicketAlternating(string $serviceType): ?QueueTicket
+    protected function getNextPendingTicketAlternating(Counter $counter): ?QueueTicket
     {
-        $nextStudent = $this->todayTickets()->where('service_type', $serviceType)
+        $serviceType = $counter->type;
+
+        $studentQuery = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', 'student')
-            ->orderBy('created_at')
-            ->first();
+            ->orderBy('created_at');
 
-        $nextPriority = $this->todayTickets()->where('service_type', $serviceType)
+        $nextStudent = $this->scopeTicketsForCounter($studentQuery, $counter)->first();
+
+        $priorityQuery = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', '!=', 'student')
-            ->orderBy('created_at')
-            ->first();
+            ->orderBy('created_at');
+
+        $nextPriority = $this->scopeTicketsForCounter($priorityQuery, $counter)->first();
 
         if (!$nextStudent && !$nextPriority) {
             return null;
@@ -81,24 +104,28 @@ class CounterController extends Controller
             return $nextStudent;
         }
 
-        $startBucket = $this->getAlternatingStartBucket($serviceType, $nextStudent, $nextPriority);
+        $startBucket = $this->getAlternatingStartBucket($serviceType, $counter, $nextStudent, $nextPriority);
 
         return $startBucket === 'student' ? $nextStudent : $nextPriority;
     }
 
-    protected function getPendingQueueAlternating(string $serviceType)
+    protected function getPendingQueueAlternating(Counter $counter)
     {
-        $studentQueue = $this->todayTickets()->where('service_type', $serviceType)
+        $serviceType = $counter->type;
+
+        $studentQuery = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', 'student')
-            ->orderBy('created_at')
-            ->get();
+            ->orderBy('created_at');
 
-        $priorityQueue = $this->todayTickets()->where('service_type', $serviceType)
+        $studentQueue = $this->scopeTicketsForCounter($studentQuery, $counter)->get();
+
+        $priorityQuery = $this->todayTickets()->where('service_type', $serviceType)
             ->where('status', 'pending')
             ->where('priority', '!=', 'student')
-            ->orderBy('created_at')
-            ->get();
+            ->orderBy('created_at');
+
+        $priorityQueue = $this->scopeTicketsForCounter($priorityQuery, $counter)->get();
 
         if ($studentQueue->isEmpty() && $priorityQueue->isEmpty()) {
             return collect();
@@ -112,7 +139,7 @@ class CounterController extends Controller
             return $studentQueue;
         }
         
-        $startBucket = $this->getAlternatingStartBucket($serviceType, $studentQueue->first(), $priorityQueue->first());
+        $startBucket = $this->getAlternatingStartBucket($serviceType, $counter, $studentQueue->first(), $priorityQueue->first());
         $result = collect();
         $turn = $startBucket;
 
@@ -194,9 +221,9 @@ class CounterController extends Controller
             abort(403, 'Unauthorized access to this counter.');
         }
         
-        $queue = $this->getPendingQueueAlternating($counter->type);
+        $queue = $this->getPendingQueueAlternating($counter);
 
-        $onHold = $this->todayTickets()->where('service_type', $counter->type)
+        $onHoldQuery = $this->todayTickets()->where('service_type', $counter->type)
             ->where(function ($query) {
                 $query->where('status', 'on_hold')
                     ->orWhere(function ($q) {
@@ -205,8 +232,9 @@ class CounterController extends Controller
                             ->where('hold_count', '>', 0);
                     });
             })
-            ->orderBy('updated_at', 'asc')
-            ->get();
+            ->orderBy('updated_at', 'asc');
+
+        $onHold = $this->scopeTicketsForCounter($onHoldQuery, $counter)->get();
 
         $nowServing = $this->todayTickets()->where('counter_id', $counter->id)
             ->where('status', 'serving')
@@ -248,7 +276,7 @@ class CounterController extends Controller
                 }
 
                 // Get next pending ticket using alternating student/priority strategy
-                $nextTicket = $this->getNextPendingTicketAlternating($counter->type);
+                $nextTicket = $this->getNextPendingTicketAlternating($counter);
 
                 if ($nextTicket) {
                     // this ensures same ticket not served by another counter
@@ -282,10 +310,11 @@ class CounterController extends Controller
         
         $removed = false;
         if ($nextPressCount % 3 === 0) {
-            $oldestHold = $this->todayTickets()->where('service_type', $counter->type)
+            $oldestHoldQuery = $this->todayTickets()->where('service_type', $counter->type)
                 ->where('status', 'on_hold')
-                ->orderBy('updated_at', 'asc')
-                ->first();
+                ->orderBy('updated_at', 'asc');
+
+            $oldestHold = $this->scopeTicketsForCounter($oldestHoldQuery, $counter)->first();
             if ($oldestHold) {
                 $oldestHold->status = 'done';
                 $oldestHold->save();
@@ -312,7 +341,7 @@ class CounterController extends Controller
         //update last action time
         session(['last_hold_time_' . $counter->id => $now]);
         
-        if ($ticket->status === 'serving' && $ticket->counter_id === $counter->id && $ticket->created_at->isToday()) {
+        if ($ticket->status === 'serving' && $ticket->counter_id === $counter->id && $ticket->created_at->isToday() && $this->isTicketAllowedForCounter($counter, $ticket)) {
             $servedAfterHold = null;
 
             // Serialize selection/assignment per service 
@@ -325,7 +354,7 @@ class CounterController extends Controller
                     $ticket->save();
 
                     //automatically serve the next pending ticket using alternating strategy
-                    $nextTicket = $this->getNextPendingTicketAlternating($counter->type);
+                    $nextTicket = $this->getNextPendingTicketAlternating($counter);
 
                     if ($nextTicket) {
                         $nextTicket->status = 'serving';
@@ -348,7 +377,7 @@ class CounterController extends Controller
 
     public function callAgain(Counter $counter, QueueTicket $ticket)
     {
-        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type && $ticket->created_at->isToday()) {
+        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type && $ticket->created_at->isToday() && $this->isTicketAllowedForCounter($counter, $ticket)) {
             //use transaction mysql function to handle both the current serving ticket and the called ticket
             DB::transaction(function () use ($counter, $ticket) {
                 // una kay, handle any currently serving ticket at this counter
@@ -379,7 +408,7 @@ class CounterController extends Controller
     // remove hold from hold list
     public function removeHold(Counter $counter, QueueTicket $ticket)
     {
-        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type && $ticket->created_at->isToday()) {
+        if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type && $ticket->created_at->isToday() && $this->isTicketAllowedForCounter($counter, $ticket)) {
             $ticket->status = 'done';
             $ticket->save();
             event(new TicketUpdated('done', $ticket));
