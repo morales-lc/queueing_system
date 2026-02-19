@@ -232,8 +232,8 @@ class CounterController extends Controller
         session(['last_next_time_' . $counter->id => $now]);
         
         $currentTicket = null;
-        
-        // Serialize selection/assignment per service to keep global alternation consistent
+        //global alternation consistency - if multiple counters of same type call next at the same time, they will still alternate between student and priority based on the last called ticket of that service type, not based on their own last called ticket
+        //serialize selection/assignment per service to keep global alternation consistent
         $this->withServiceLock($counter->type, function () use ($counter, &$nextTicket, &$currentTicket) {
             DB::transaction(function () use ($counter, &$nextTicket, &$currentTicket) {
                 // Mark currently serving ticket as done 
@@ -251,7 +251,7 @@ class CounterController extends Controller
                 $nextTicket = $this->getNextPendingTicketAlternating($counter->type);
 
                 if ($nextTicket) {
-                    // Ensure same ticket not served by another counter
+                    // this ensures same ticket not served by another counter
                     if ($nextTicket->status === 'serving' && $nextTicket->counter_id !== $counter->id) {
                         throw new \Exception('Ticket already serving in another counter.');
                     }
@@ -276,7 +276,7 @@ class CounterController extends Controller
 
         event(new TicketUpdated('serving', $nextTicket));
 
-        // Auto-remove oldest on-hold after every 3 Next presses (based on total calls)
+        // autoremove oldest on-hold after every 3 Next presses base on total calls
         static $nextPressCount = 0;
         $nextPressCount++;
         
@@ -376,6 +376,7 @@ class CounterController extends Controller
         return redirect()->route('counter.show', $counter);
     }
 
+    // remove hold from hold list
     public function removeHold(Counter $counter, QueueTicket $ticket)
     {
         if (in_array($ticket->status, ['on_hold', 'serving'], true) && $ticket->service_type === $counter->type && $ticket->created_at->isToday()) {

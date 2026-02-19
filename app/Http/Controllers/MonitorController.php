@@ -9,6 +9,11 @@ use App\Models\MonitorSetting;
 
 class MonitorController extends Controller
 {
+    protected function todayTickets()
+    {
+        return QueueTicket::whereDate('created_at', today());
+    }
+
     public function index()
     {
         $cashierCounters = Counter::where('type', 'cashier')->orderBy('id')->get();
@@ -20,13 +25,13 @@ class MonitorController extends Controller
         ];
 
         foreach ($cashierCounters as $counter) {
-            $nowServing['cashier'][$counter->id] = QueueTicket::where('counter_id', $counter->id)
+            $nowServing['cashier'][$counter->id] = $this->todayTickets()->where('counter_id', $counter->id)
                 ->where('status', 'serving')
                 ->latest()
                 ->first();
         }
         foreach ($registrarCounters as $counter) {
-            $nowServing['registrar'][$counter->id] = QueueTicket::where('counter_id', $counter->id)
+            $nowServing['registrar'][$counter->id] = $this->todayTickets()->where('counter_id', $counter->id)
                 ->where('status', 'serving')
                 ->latest()
                 ->first();
