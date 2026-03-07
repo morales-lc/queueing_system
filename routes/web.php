@@ -7,6 +7,7 @@ use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\CounterController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\RestartQueueController;
 use App\Http\Controllers\Admin\SessionController as AdminSessionController;
 
 // Landing redirect to kiosk
@@ -55,6 +56,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/counter/{counter}/hold/{ticket}', [CounterController::class, 'hold'])->name('counter.hold');
     Route::post('/counter/{counter}/call-again/{ticket}', [CounterController::class, 'callAgain'])->name('counter.callAgain');
     Route::delete('/counter/{counter}/hold/{ticket}', [CounterController::class, 'removeHold'])->name('counter.removeHold');
+
+    // Daily queue restart
+    Route::get('/queue/restart', [RestartQueueController::class, 'index'])->name('queue.restart.index');
+    Route::post('/queue/restart', [RestartQueueController::class, 'restart'])->name('queue.restart.run');
     
     // Media management routes
     Route::get('/media', [MediaController::class, 'index'])->name('media.index');
