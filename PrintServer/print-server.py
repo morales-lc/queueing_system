@@ -101,7 +101,6 @@ def health():
         except Exception:
             pass
 
-
 def escpos_image(path):
     img = Image.open(path)
 
@@ -109,7 +108,7 @@ def escpos_image(path):
     img = img.convert("L")
 
     # Resize logo smaller
-    TARGET_WIDTH = 200  # adjust as needed
+    TARGET_WIDTH = 100  # logo size edit if you want RESIZE HERE -- 
     scale = TARGET_WIDTH / img.width
     img = img.resize((TARGET_WIDTH, int(img.height * scale)))
 
@@ -137,12 +136,6 @@ def escpos_image(path):
 
     return header + bytes([xL, xH, yL, yH]) + img.tobytes()
 
-
-
-
-
-
-
 def escpos_ticket(ticket):
 
     raw_time = ticket["created_at"]
@@ -162,7 +155,6 @@ def escpos_ticket(ticket):
     try:
         img_bytes = escpos_image("Lourdes_final.png")
         lines.append(img_bytes)
-        lines.append(b"\n")
 
         # Reset after image
         lines.append(esc(0x1B, 0x40))
@@ -183,9 +175,9 @@ def escpos_ticket(ticket):
     lines.append(("Service: " + ticket["service_type"].capitalize() + "\n").encode("ascii"))
     lines.append(("Time: " + readable + "\n").encode("ascii"))
 
-    # Footer (compact)
-    lines.append(b"\nPlease wait for your number\n")
-    lines.append(b"\n")
+    # # Footer (compact)
+    # lines.append(b"\nPlease wait for your number\n")
+    # lines.append(b"\n")
 
     # Cut
     lines.append(esc(0x1D, 0x56, 0x42, 0x00))

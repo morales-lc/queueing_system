@@ -181,6 +181,7 @@
         </div>
 
         <div class="d-flex gap-2">
+            <a href="{{ route('queue.restart.index') }}" class="btn btn-light fw-bold">Restart Queue</a>
             <a href="{{ route('media.index') }}" class="btn btn-light fw-bold">Manage TV Content</a>
             <form method="post" action="{{ route('logout') }}">
                 @csrf
