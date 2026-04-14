@@ -30,7 +30,13 @@ class CounterController extends Controller
     protected function scopeTicketsForCounter($query, Counter $counter)
     {
         if ($counter->type === 'registrar') {
-            $query->where('designated_counter_id', $counter->id);
+            // Show registrar tickets that are either:
+            // 1. Not assigned to a specific counter (designated_counter_id IS NULL) - any registrar can service
+            // 2. Assigned to this specific counter (designated_counter_id = $counter->id) - only this counter
+            $query->where(function($q) use ($counter) {
+                $q->whereNull('designated_counter_id')
+                  ->orWhere('designated_counter_id', $counter->id);
+            });
         }
 
         return $query;
@@ -42,7 +48,8 @@ class CounterController extends Controller
             return true;
         }
 
-        return (int) $ticket->designated_counter_id === (int) $counter->id;
+        // Allow registrar to handle tickets that are either unassigned or assigned to this counter
+        return $ticket->designated_counter_id === null || (int) $ticket->designated_counter_id === (int) $counter->id;
     }
 
     protected function getLastCalledTicket(string $serviceType, Counter $counter): ?QueueTicket

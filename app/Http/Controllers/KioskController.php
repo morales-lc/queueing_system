@@ -66,10 +66,6 @@ class KioskController extends Controller
             'service_type' => 'required|in:cashier,registrar',
         ]);
 
-        if ($validated['service_type'] === 'registrar') {
-            return redirect()->route('kiosk.registrarPrograms');
-        }
-
         return view('kiosk.priority', ['service' => $validated['service_type']]);
     }
 
@@ -100,12 +96,6 @@ class KioskController extends Controller
             'program' => 'nullable|string|in:' . implode(',', array_keys(self::REGISTRAR_PROGRAMS)),
         ]);
 
-        if ($validated['service'] === 'registrar' && empty($validated['program'])) {
-            return redirect()->route('kiosk.registrarPrograms')->withErrors([
-                'program' => 'Please select a registrar program first.',
-            ]);
-        }
-
         return view('kiosk.priority', $validated);
     }
 
@@ -120,34 +110,12 @@ class KioskController extends Controller
         $programKey = null;
         $designatedCounterId = null;
 
-        if ($validated['service'] === 'registrar') {
-            $programKey = $validated['program'] ?? null;
-
-            if (!$programKey) {
-                return redirect()->route('kiosk.registrarPrograms')->withErrors([
-                    'program' => 'Please select a registrar program first.',
-                ]);
-            }
-
-            $programConfig = self::REGISTRAR_PROGRAMS[$programKey] ?? null;
-
-            if (!$programConfig) {
-                return redirect()->route('kiosk.registrarPrograms')->withErrors([
-                    'program' => 'Invalid registrar program selected.',
-                ]);
-            }
-
-            $designatedCounterId = $this->getRegistrarCounterIdByNumber((int) $programConfig['registrar_number']);
-
-            if (!$designatedCounterId) {
-                return redirect()->route('kiosk.registrarPrograms')->withErrors([
-                    'program' => 'Assigned registrar counter is not available. Please ask staff for assistance.',
-                ]);
-            }
-        }
+        // For registrar, don't assign to specific counter - any registrar counter can service it
+        // (For cashier, $designatedCounterId remains null as well, meaning any cashier can service it)
 
         // If printing is enabled, ensure printer is online / ready before generating a code
-        if (config('app.printer_enabled', false)) {
+        // Skip validation if SKIP_PRINTER_VALIDATION is enabled (for development/testing)
+        if (config('app.printer_enabled', false) && !config('app.skip_printer_validation', false)) {
             $printerType = config('app.printer_type', 'windows');
 
             // For HTTP printing, ask the Windows print server /health endpoint

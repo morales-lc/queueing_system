@@ -298,7 +298,7 @@
         <div class="circle"></div>
         <h5 class="m-0 fw-bold">LOURDES COLLEGE, INC.</h5>
         <div class="ms-auto">
-            <a href="{{ ($service ?? null) === 'registrar' ? route('kiosk.registrarPrograms') : route('kiosk.index') }}" class="btn btn-light fw-bold" style="border:2px solid #ffbad6;">
+            <a href="{{ route('kiosk.index') }}" class="btn btn-light fw-bold" style="border:2px solid #ffbad6;">
                 ← Back
             </a>
         </div>
@@ -370,7 +370,7 @@
         <div style="height:50px"></div>
 
         <div class="d-flex justify-content-end mt-4">
-            <a href="{{ ($service ?? null) === 'registrar' ? route('kiosk.registrarPrograms') : route('kiosk.index') }}" class="btn btn-light fw-bold" style="border:2px solid #ffbad6;">
+            <a href="{{ route('kiosk.index') }}" class="btn btn-light fw-bold" style="border:2px solid #ffbad6;">
                 ← Back
             </a>
         </div>
